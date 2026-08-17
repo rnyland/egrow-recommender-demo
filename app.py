@@ -1,6 +1,7 @@
 
 import streamlit as st
 import pandas as pd
+import textwrap
 
 
 # ============================================================
@@ -169,7 +170,7 @@ st.markdown(
 # ============================================================
 
 st.markdown(
-    """
+    textwrap.dedent("""
     <div class="egrow-header">
         <div class="egrow-title">
             EGROW Learning Platform
@@ -178,7 +179,7 @@ st.markdown(
             My dashboard › Course recommendations
         </div>
     </div>
-    """,
+    """),
     unsafe_allow_html=True
 )
 
@@ -333,7 +334,7 @@ if st.session_state.viewed_course is not None:
 # ============================================================
 
 st.markdown(
-    f"""
+    textwrap.dedent(f"""
     <div class="intro-box">
         <h2>Recommended courses for you</h2>
 
@@ -346,7 +347,7 @@ st.markdown(
             Demo user: {user_id}
         </span>
     </div>
-    """,
+    """),
     unsafe_allow_html=True
 )
 
@@ -381,7 +382,7 @@ for _, row in (
         tradeoff_text = "No major trade-offs identified."
 
     st.markdown(
-        f"""
+    textwrap.dedent(f"""
         <div class="course-card">
 
             <div class="rank-text">
@@ -444,9 +445,9 @@ for _, row in (
             </div>
 
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """),
+    unsafe_allow_html=True
+)
 
     col1, col2, col3 = st.columns(
         [1, 1, 3]
