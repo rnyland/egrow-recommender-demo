@@ -353,9 +353,10 @@ def extract_jobseeker_profile(user):
 
     return profile
 
-    profile = extract_jobseeker_profile(
+profile = extract_jobseeker_profile(
     selected_user
 )
+
 
 # ============================================================
 # COURSE RETRIEVAL
