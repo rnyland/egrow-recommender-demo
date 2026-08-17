@@ -904,7 +904,7 @@ def rank_courses(
 
     return ranked
 
-    ranked_courses = rank_courses(
+ranked_courses = rank_courses(
     profile=profile,
     feasible_courses=feasible_courses,
     labour_market=labour_market
