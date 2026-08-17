@@ -74,6 +74,15 @@ if "interested_courses" not in st.session_state:
 if "viewed_course" not in st.session_state:
     st.session_state.viewed_course = None
 
+# Reset user-specific UI state when another simulated user is selected
+if "active_user_id" not in st.session_state:
+    st.session_state.active_user_id = selected_user_id
+
+elif st.session_state.active_user_id != selected_user_id:
+    st.session_state.active_user_id = selected_user_id
+    st.session_state.interested_courses = []
+    st.session_state.viewed_course = None
+
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -600,6 +609,55 @@ def check_feasibility(profile, course):
         )
 
     return len(reasons) == 0, reasons
+
+
+
+# ============================================================
+# APPLY FEASIBILITY FILTER
+# ============================================================
+
+feasibility_results = []
+
+for _, course in candidate_courses.iterrows():
+
+    feasible, reasons = check_feasibility(
+        profile,
+        course
+    )
+
+    course_record = course.to_dict()
+
+    course_record["feasible"] = feasible
+    course_record["infeasible_reasons"] = reasons
+
+    feasibility_results.append(
+        course_record
+    )
+
+
+feasibility_results = pd.DataFrame(
+    feasibility_results
+)
+
+
+if feasibility_results.empty:
+
+    feasible_courses = pd.DataFrame(
+        columns=list(candidate_courses.columns) + [
+            "feasible",
+            "infeasible_reasons"
+        ]
+    )
+
+else:
+
+    feasible_courses = (
+        feasibility_results[
+            feasibility_results["feasible"] == True
+        ]
+        .copy()
+        .reset_index(drop=True)
+    )
 
 
 # ============================================================
