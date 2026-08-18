@@ -1285,7 +1285,6 @@ with st.sidebar:
     st.write("🏠 MOVEᴱ dashboard")
     st.write("📚 My learning")
     st.write("⭐ Recommended learning")
-    st.write("💎 My ᴱGROW profile")
 
     st.divider()
 
