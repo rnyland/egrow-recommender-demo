@@ -1267,18 +1267,6 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("Your ᴱGROW profile")
-
-    st.write(f"**User:** {user_id}")
-
-    st.write(f"**Digital profile:** {digital_profile}")
-    st.write(f"**Green profile:** {green_profile}")
-    st.write(f"**Target role:** {target_role}")
-    st.write(f"**Preferred language:** {preferred_language}")
-    st.write(f"**Delivery preference:** {delivery_preference}")
-
-    st.divider()
-
     st.subheader("Navigation")
 
     st.write("🏠 MOVEᴱ dashboard")
