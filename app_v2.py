@@ -1254,14 +1254,14 @@ with st.sidebar:
 
     st.subheader("Navigation")
 
-page_mode = st.sidebar.radio(
-    "",
-    options=[
-        "⭐ Recommended learning",
-        "📚 Course catalogue"
-    ],
-    index=0
-)
+    page_mode = st.sidebar.radio(
+        "",
+        options=[
+            "⭐ Recommended learning",
+            "📚 Course catalogue"
+        ],
+        index=0
+    )
 
     st.divider()
 
