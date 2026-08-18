@@ -155,8 +155,7 @@ page_mode = st.sidebar.radio(
     "View",
     options=[
         "Recommended learning",
-        "Course catalogue",
-        "My ᴱGROW profile"
+        "Course catalogue"
     ],
     index=0
 )
