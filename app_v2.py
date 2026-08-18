@@ -146,21 +146,6 @@ selected_user = (
     .iloc[0]
 )
 
-
-# ============================================================
-# APP VIEW
-# ============================================================
-
-page_mode = st.sidebar.radio(
-    "View",
-    options=[
-        "Recommended learning",
-        "Course catalogue"
-    ],
-    index=0
-)
-
-
 # ============================================================
 # SESSION STATE
 # ============================================================
@@ -1269,9 +1254,14 @@ with st.sidebar:
 
     st.subheader("Navigation")
 
-    st.write("🏠 MOVEᴱ dashboard")
-    st.write("📚 My learning")
-    st.write("⭐ Recommended learning")
+page_mode = st.sidebar.radio(
+    "",
+    options=[
+        "⭐ Recommended learning",
+        "📚 Course catalogue"
+    ],
+    index=0
+)
 
     st.divider()
 
