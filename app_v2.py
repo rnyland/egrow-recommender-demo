@@ -1254,7 +1254,7 @@ with st.sidebar:
 
     st.subheader("Navigation")
 
-    page_mode = st.sidebar.radio(
+    navigation_choice = st.radio(
         "",
         options=[
             "⭐ Recommended learning",
@@ -1262,6 +1262,13 @@ with st.sidebar:
         ],
         index=0
     )
+
+    # Convert the visual label into a simple internal value
+    if navigation_choice == "⭐ Recommended learning":
+        page_mode = "Recommended learning"
+
+    elif navigation_choice == "📚 Course catalogue":
+        page_mode = "Course catalogue"
 
     st.divider()
 
