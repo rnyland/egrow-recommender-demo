@@ -111,18 +111,13 @@ def load_data():
         "courses.pkl"
     )
 
-    labour_market = pd.read_pickle(
-        "labour_market.pkl"
-    )
-
     return (
         jobseekers,
-        courses,
-        labour_market
+        courses
     )
 
 
-jobseekers, courses, labour_market = load_data()
+jobseekers, courses = load_data()
 
 # ============================================================
 # DEMO ROLE + SELECT JOBSEEKER
@@ -799,7 +794,6 @@ RANKING_WEIGHTS = {
     "skill_fit": 0.25,
     "digital_fit": 0.15,
     "green_fit": 0.10,
-    "labour_market_fit": 0.20
 }
 
 
@@ -919,48 +913,9 @@ def calculate_green_fit(profile, course):
         )
     )
 
-
-def calculate_labour_market_fit(
-    course,
-    labour_market
-):
-
-    role_data = labour_market[
-        labour_market["target_role"]
-        == course["target_role"]
-    ]
-
-    if len(role_data) == 0:
-        return 50.0
-
-    course_skills = {
-        str(skill).lower()
-        for skill in course["skills_taught"]
-    }
-
-    relevant = role_data[
-        role_data["skill"]
-        .str.lower()
-        .isin(course_skills)
-    ]
-
-    if len(relevant) == 0:
-        return 50.0
-
-    return round(
-        float(
-            relevant[
-                "labour_market_score"
-            ].mean()
-        ),
-        1
-    )
-
-
 def rank_courses(
     profile,
-    feasible_courses,
-    labour_market
+    feasible_courses
 ):
 
     ranked_records = []
@@ -997,13 +952,6 @@ def rank_courses(
             )
         )
 
-        labour_score = (
-            calculate_labour_market_fit(
-                course,
-                labour_market
-            )
-        )
-
         final_score = (
             target_score
             * RANKING_WEIGHTS[
@@ -1024,11 +972,6 @@ def rank_courses(
             * RANKING_WEIGHTS[
                 "green_fit"
             ]
-            +
-            labour_score
-            * RANKING_WEIGHTS[
-                "labour_market_fit"
-            ]
         )
 
         record = course.to_dict()
@@ -1047,10 +990,6 @@ def rank_courses(
 
         record["green_score"] = (
             round(green_score, 1)
-        )
-
-        record["labour_market_score"] = (
-            round(labour_score, 1)
         )
 
         record["existing_skill_overlap"] = (
@@ -1094,8 +1033,7 @@ def rank_courses(
 
 ranked_courses = rank_courses(
     profile=profile,
-    feasible_courses=feasible_courses,
-    labour_market=labour_market
+    feasible_courses=feasible_courses
 )
 
 top_recommendations = (
@@ -1203,28 +1141,6 @@ def create_recommendation_explanation(
         tradeoffs.append(
             "The course may be below your current "
             "digital capability."
-        )
-
-    # --------------------------------------------------------
-    # Labour-market relevance
-    # --------------------------------------------------------
-
-    if course[
-        "labour_market_score"
-    ] >= 70:
-
-        reasons.append(
-            "The skills taught show strong "
-            "simulated labour-market demand."
-        )
-
-    elif course[
-        "labour_market_score"
-    ] < 50:
-
-        tradeoffs.append(
-            "Simulated labour-market demand for "
-            "the taught skills is comparatively weaker."
         )
 
     return reasons, tradeoffs
