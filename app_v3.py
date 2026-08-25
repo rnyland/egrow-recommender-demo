@@ -235,7 +235,6 @@ user_id = selected_user_id
 # Basic selected-user information
 digital_profile = selected_user["digital_profile"]
 green_profile = selected_user["green_profile"]
-target_role = selected_user["target_role"]
 preferred_language = selected_user["preferred_language"]
 delivery_preference = selected_user["delivery_preference"]
 
@@ -269,7 +268,6 @@ class JobSeekerProfile:
     program_status: Optional[str]
 
     skills: list = field(default_factory=list)
-    target_role: Optional[str] = None
     work_history: list = field(default_factory=list)
 
     availability: Optional[str] = None
@@ -299,7 +297,6 @@ class JobSeekerProfile:
 CRITICAL_PROFILE_FIELDS = [
     "digital_profile",
     "green_profile",
-    "target_role",
     "preferred_language",
     "delivery_preference"
 ]
@@ -436,8 +433,6 @@ def extract_jobseeker_profile(user):
 
         skills=user["skills"],
 
-        target_role=user["target_role"],
-
         work_history=user[
             "work_history"
         ],
@@ -497,106 +492,29 @@ profile = extract_jobseeker_profile(
 # ============================================================
 
 def retrieve_candidate_courses(
-    profile,
     courses,
     max_candidates=30
 ):
 
-    candidate_courses = courses.copy()
+    # No skill-based or target-role-based retrieval is used.
+    # The prototype keeps a broad course pool and lets the
+    # feasibility and digital/green ranking stages determine
+    # which learning opportunities are most suitable.
 
-    # --------------------------------------------------------
-    # Target-role match
-    # --------------------------------------------------------
-
-    candidate_courses["target_role_match"] = (
-        candidate_courses["target_role"]
-        .str.lower()
-        .eq(
-            str(profile.target_role).lower()
-        )
+    candidate_courses = (
+        courses
+        .head(max_candidates)
+        .copy()
     )
 
-    # --------------------------------------------------------
-    # Skill overlap
-    # --------------------------------------------------------
+    return candidate_courses
 
-    user_skills = {
-        str(skill).lower()
-        for skill in profile.skills
-    }
-
-    candidate_courses["skill_overlap"] = (
-        candidate_courses["skills_taught"]
-        .apply(
-            lambda skills: len(
-                user_skills.intersection(
-                    {
-                        str(skill).lower()
-                        for skill in skills
-                    }
-                )
-            )
-            if isinstance(skills, list)
-            else 0
-        )
-    )
-
-    # --------------------------------------------------------
-    # Retrieval score
-    # --------------------------------------------------------
-
-    candidate_courses["retrieval_score"] = (
-        candidate_courses[
-            "target_role_match"
-        ].astype(int) * 2
-        +
-        candidate_courses[
-            "skill_overlap"
-        ]
-    )
-
-    # --------------------------------------------------------
-    # Keep relevant candidates
-    # --------------------------------------------------------
-
-    relevant_courses = candidate_courses[
-        candidate_courses[
-            "retrieval_score"
-        ] > 0
-    ].copy()
-
-    # Fallback if there are no direct matches
-    if relevant_courses.empty:
-
-        relevant_courses = (
-            candidate_courses
-            .sort_values(
-                "retrieval_score",
-                ascending=False
-            )
-            .head(max_candidates)
-            .copy()
-        )
-
-    else:
-
-        relevant_courses = (
-            relevant_courses
-            .sort_values(
-                "retrieval_score",
-                ascending=False
-            )
-            .head(max_candidates)
-            .copy()
-        )
-
-    return relevant_courses
 
 candidate_courses = retrieve_candidate_courses(
-    profile=profile,
     courses=courses,
     max_candidates=30
 )
+
 
 # ============================================================
 # FEASIBILITY FILTER
@@ -789,72 +707,13 @@ else:
 # RANKING / MATCHING
 # ============================================================
 
+# Skill fit and target-role fit have been removed.
+# The recommendation score is now based only on
+# digital fit and green fit.
 RANKING_WEIGHTS = {
-    "target_role_fit": 0.30,
-    "skill_fit": 0.25,
-    "digital_fit": 0.15,
-    "green_fit": 0.10,
+    "digital_fit": 0.60,
+    "green_fit": 0.40
 }
-
-
-def calculate_target_role_fit(profile, course):
-
-    if (
-        str(profile.target_role).lower()
-        == str(course["target_role"]).lower()
-    ):
-        return 100.0
-
-    return 0.0
-
-
-def calculate_skill_fit(profile, course):
-
-    user_skills = {
-        str(skill).lower()
-        for skill in profile.skills
-    }
-
-    course_skills = {
-        str(skill).lower()
-        for skill in course["skills_taught"]
-    }
-
-    if len(course_skills) == 0:
-        return 0.0, [], []
-
-    existing_overlap = (
-        user_skills.intersection(
-            course_skills
-        )
-    )
-
-    new_skills = (
-        course_skills
-        - user_skills
-    )
-
-    overlap_ratio = (
-        len(existing_overlap)
-        / len(course_skills)
-    )
-
-    new_skill_ratio = (
-        len(new_skills)
-        / len(course_skills)
-    )
-
-    score = (
-        overlap_ratio * 40
-        +
-        new_skill_ratio * 60
-    )
-
-    return (
-        round(score, 1),
-        sorted(existing_overlap),
-        sorted(new_skills)
-    )
 
 
 def calculate_digital_fit(profile, course):
@@ -913,6 +772,7 @@ def calculate_green_fit(profile, course):
         )
     )
 
+
 def rank_courses(
     profile,
     feasible_courses
@@ -921,22 +781,6 @@ def rank_courses(
     ranked_records = []
 
     for _, course in feasible_courses.iterrows():
-
-        target_score = (
-            calculate_target_role_fit(
-                profile,
-                course
-            )
-        )
-
-        (
-            skill_score,
-            existing_skills,
-            new_skills
-        ) = calculate_skill_fit(
-            profile,
-            course
-        )
 
         digital_score = (
             calculate_digital_fit(
@@ -953,16 +797,6 @@ def rank_courses(
         )
 
         final_score = (
-            target_score
-            * RANKING_WEIGHTS[
-                "target_role_fit"
-            ]
-            +
-            skill_score
-            * RANKING_WEIGHTS[
-                "skill_fit"
-            ]
-            +
             digital_score
             * RANKING_WEIGHTS[
                 "digital_fit"
@@ -976,28 +810,12 @@ def rank_courses(
 
         record = course.to_dict()
 
-        record["target_role_score"] = (
-            round(target_score, 1)
-        )
-
-        record["skill_score"] = (
-            round(skill_score, 1)
-        )
-
         record["digital_score"] = (
             round(digital_score, 1)
         )
 
         record["green_score"] = (
             round(green_score, 1)
-        )
-
-        record["existing_skill_overlap"] = (
-            existing_skills
-        )
-
-        record["new_skills_taught"] = (
-            new_skills
         )
 
         record["final_match_score"] = (
@@ -1031,16 +849,19 @@ def rank_courses(
 
     return ranked
 
+
 ranked_courses = rank_courses(
     profile=profile,
     feasible_courses=feasible_courses
 )
+
 
 top_recommendations = (
     ranked_courses
     .head(5)
     .copy()
 )
+
 
 # ============================================================
 # CREATE USER-FACING EXPLANATIONS
@@ -1070,62 +891,6 @@ def create_recommendation_explanation(
     tradeoffs = []
 
     # --------------------------------------------------------
-    # Target role
-    # --------------------------------------------------------
-
-    if course["target_role_score"] == 100:
-
-        reasons.append(
-            f"Directly supports your target role: "
-            f"{profile.target_role}."
-        )
-
-    else:
-
-        tradeoffs.append(
-            "The course does not directly match "
-            "your stated target role."
-        )
-
-    # --------------------------------------------------------
-    # New skills
-    # --------------------------------------------------------
-
-    if len(
-        course["new_skills_taught"]
-    ) > 0:
-
-        reasons.append(
-            "Develops new skills: "
-            + ", ".join(
-                course[
-                    "new_skills_taught"
-                ]
-            )
-            + "."
-        )
-
-    # --------------------------------------------------------
-    # Existing skills
-    # --------------------------------------------------------
-
-    if len(
-        course[
-            "existing_skill_overlap"
-        ]
-    ) > 0:
-
-        reasons.append(
-            "Builds on skills you already have: "
-            + ", ".join(
-                course[
-                    "existing_skill_overlap"
-                ]
-            )
-            + "."
-        )
-
-    # --------------------------------------------------------
     # Digital fit
     # --------------------------------------------------------
 
@@ -1143,7 +908,26 @@ def create_recommendation_explanation(
             "digital capability."
         )
 
+    # --------------------------------------------------------
+    # Green fit
+    # --------------------------------------------------------
+
+    if course["green_score"] >= 80:
+
+        reasons.append(
+            "The course has a strong alignment "
+            "with your current green profile."
+        )
+
+    elif course["green_score"] < 60:
+
+        tradeoffs.append(
+            "The course has a comparatively weaker "
+            "alignment with your current green profile."
+        )
+
     return reasons, tradeoffs
+
 
 # ============================================================
 # APPLY EXPLANATIONS TO TOP RECOMMENDATIONS
@@ -1239,7 +1023,6 @@ with st.sidebar:
         st.write(f"**User:** {profile.user_id}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
-        st.write(f"**Target role:** {profile.target_role}")
         st.write(f"**Language:** {profile.preferred_language}")
         st.write(f"**Delivery:** {profile.delivery_preference}")
 
@@ -1324,7 +1107,6 @@ if demo_role == "Caseworker":
 
         with col1:
             st.write(f"**User:** {profile.user_id}")
-            st.write(f"**Target role:** {profile.target_role}")
             st.write(f"**Employment:** {profile.employment_status}")
 
         with col2:
@@ -1341,15 +1123,6 @@ if demo_role == "Caseworker":
 
             st.write(f"**Education:** {profile.education_level}")
             st.write(f"**Location:** {profile.city}, {profile.country}")
-
-            st.write(
-                "**Skills:** "
-                + (
-                    ", ".join(profile.skills)
-                    if profile.skills
-                    else "None recorded"
-                )
-            )
 
             st.write(
                 "**Work history:** "
@@ -1680,7 +1453,7 @@ if demo_role == "Caseworker":
         search_text = st.text_input(
             "Search courses",
             placeholder=(
-                "Search by title, provider, target role or skill"
+                "Search by title or provider"
             )
         )
 
@@ -1740,29 +1513,10 @@ if demo_role == "Caseworker":
 
             def catalogue_match(row):
 
-                skills = row.get(
-                    "skills_taught",
-                    []
-                )
-
-                skill_text = (
-                    " ".join(
-                        str(x)
-                        for x in skills
-                    )
-                    if isinstance(
-                        skills,
-                        list
-                    )
-                    else str(skills)
-                )
-
                 searchable = " ".join(
                     [
                         str(row.get("title", "")),
-                        str(row.get("provider", "")),
-                        str(row.get("target_role", "")),
-                        skill_text
+                        str(row.get("provider", ""))
                     ]
                 ).lower()
 
@@ -1912,19 +1666,6 @@ if demo_role == "Caseworker":
                 ]
             )
 
-        st.write(
-            f"**Target role:** "
-            f"{catalogue_course['target_role']}"
-        )
-
-        st.write("**Skills taught**")
-
-        for skill in catalogue_course[
-            "skills_taught"
-        ]:
-
-            st.write(f"• {skill}")
-
         st.write("**Course availability**")
 
         st.write(
@@ -1995,7 +1736,7 @@ if demo_role == "Jobseeker":
     st.markdown(
         '<div class="diamond-subtitle">'
         'Learning opportunities approved for you based on your '
-        'ᴱGROW profile, career direction and learning needs.'
+        'ᴱGROW profile, existing skills and learning needs.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -2138,16 +1879,6 @@ if demo_role == "Jobseeker":
 
             st.write(f"✓ {reason}")
 
-        st.subheader(
-            "Skills you may develop"
-        )
-
-        for skill in detail[
-            "skills_taught"
-        ]:
-
-            st.write(f"• {skill}")
-
         if len(
             detail[
                 "micro_credentials"
@@ -2279,18 +2010,6 @@ if demo_role == "Jobseeker":
             ]:
 
                 st.write(f"✓ {reason}")
-
-            st.write(
-                "**Skills you may develop**"
-            )
-
-            st.write(
-                " · ".join(
-                    row[
-                        "skills_taught"
-                    ]
-                )
-            )
 
             button_col1, button_col2, _ = (
                 st.columns(
