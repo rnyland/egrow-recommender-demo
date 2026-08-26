@@ -119,16 +119,51 @@ def load_data():
 
 jobseekers, courses = load_data()
 
+
+# ============================================================
+# ORGANISATIONS
+# ============================================================
+
+# Purpose: Defines the six DIAMOND organisations used in the prototype.
+
+ORGANISATIONS = [
+    "EMIT",
+    "YPDE",
+    "DEINDE",
+    "FOB",
+    "PROM",
+    "FMIR"
+]
+
+
+# Check that the new simulated datasets contain the required organisation fields.
+if "organisation" not in jobseekers.columns:
+    st.error(
+        "The jobseeker dataset is missing the 'organisation' column."
+    )
+    st.stop()
+
+if "provider" not in courses.columns:
+    st.error(
+        "The course dataset is missing the 'provider' column."
+    )
+    st.stop()
+
+
+# Keep only recognised DIAMOND organisations.
+jobseekers = jobseekers[
+    jobseekers["organisation"].isin(ORGANISATIONS)
+].copy()
+
+courses = courses[
+    courses["provider"].isin(ORGANISATIONS)
+].copy()
+
 # ============================================================
 # DEMO ROLE + SELECT JOBSEEKER
 # ============================================================
 
-# Purpose: Selects whether the prototype is viewed as a caseworker 
-# or applicant and selects the applicant whose data are used.
-
-# Create the switch option in the sidebar to choose which version to see.
-# * Caseworker    --> Professional view (default selection)
-# * Jobseeker     --> Applicant view
+# Purpose: Selects the system role and restricts access by organisation.
 
 demo_role = st.sidebar.radio(
     "Demo as",
@@ -139,40 +174,100 @@ demo_role = st.sidebar.radio(
     index=0
 )
 
-# Make a list of all simulated applicants from the applicant list and collect their user IDs.
-# Feed the list to dropdown menu.
+
+# ------------------------------------------------------------
+# CASEWORKER
+# ------------------------------------------------------------
+
+if demo_role == "Caseworker":
+
+    # Simulates which DIAMOND organisation the caseworker belongs to.
+    caseworker_organisation = st.sidebar.selectbox(
+        "Caseworker organisation",
+        options=ORGANISATIONS
+    )
+
+    # Caseworkers can only access applicants from their own organisation.
+    eligible_jobseekers = jobseekers[
+        jobseekers["organisation"]
+        == caseworker_organisation
+    ].copy()
+
+    user_selector_label = (
+        "Select applicant to review"
+    )
+
+
+# ------------------------------------------------------------
+# APPLICANT
+# ------------------------------------------------------------
+
+else:
+
+    caseworker_organisation = None
+
+    # Simulated login: all applicants can be selected for testing.
+    eligible_jobseekers = jobseekers.copy()
+
+    user_selector_label = (
+        "Simulated applicant login"
+    )
+
 
 user_options = (
-    jobseekers["user_id"]
+    eligible_jobseekers["user_id"]
     .sort_values()
     .tolist()
 )
 
-# Change the label depending on the selected view.
 
-user_selector_label = (
-    "Select jobseeker to review"
-    if demo_role == "Caseworker"
-    else "Simulated login"
-)
+if not user_options:
 
-# Make it possible to select an applicant.
-# Define the selected applicant.
+    st.sidebar.warning(
+        "No simulated applicants are available "
+        "for this organisation."
+    )
+
+    st.stop()
+
 
 selected_user_id = st.sidebar.selectbox(
     user_selector_label,
     options=user_options
 )
 
-# Retrieve the applicant's data.
-# e.g., EGROW profile and learning preferences.
 
+# Retrieves the selected applicant's complete record.
 selected_user = (
     jobseekers[
-        jobseekers["user_id"] == selected_user_id
+        jobseekers["user_id"]
+        == selected_user_id
     ]
     .iloc[0]
 )
+
+
+# Organisation is stored directly in the applicant dataset.
+applicant_organisation = (
+    selected_user["organisation"]
+)
+
+
+# Safety check: a caseworker cannot access an applicant
+# belonging to another organisation.
+if (
+    demo_role == "Caseworker"
+    and applicant_organisation
+    != caseworker_organisation
+):
+
+    st.error(
+        "Access denied: caseworkers can only review "
+        "applicants from their own organisation."
+    )
+
+    st.stop()
+
 
 # ============================================================
 # SESSION STATE
@@ -225,15 +320,58 @@ def open_course(course_id):
 def close_course():
     st.session_state.viewed_course = None
 
-# Approves a course for a specific applicant. 
-def approve_course(user_id, course_id):
-    approved = st.session_state.approvals_by_user.setdefault(
-        user_id,
-        []
+# Approves a course only when caseworker, applicant and provider match.
+def approve_course(
+    user_id,
+    course_id,
+    caseworker_organisation
+):
+
+    applicant_row = (
+        jobseekers[
+            jobseekers["user_id"]
+            == user_id
+        ]
+        .iloc[0]
+    )
+
+    course_row = (
+        courses[
+            courses["course_id"]
+            == course_id
+        ]
+        .iloc[0]
+    )
+
+    applicant_org = (
+        applicant_row["organisation"]
+    )
+
+    course_provider = (
+        course_row["provider"]
+    )
+
+    if (
+        applicant_org
+        != caseworker_organisation
+        or course_provider
+        != applicant_org
+    ):
+
+        return False
+
+    approved = (
+        st.session_state.approvals_by_user
+        .setdefault(
+            user_id,
+            []
+        )
     )
 
     if course_id not in approved:
         approved.append(course_id)
+
+    return True
 
 # Removes a caseworker's course approval.
 def remove_course_approval(user_id, course_id):
@@ -280,6 +418,7 @@ from typing import Optional
 class JobSeekerProfile:
 
     user_id: str
+    organisation: str
 
     digital_class: int
     digital_profile: str
@@ -435,6 +574,8 @@ def extract_jobseeker_profile(user):
 
         user_id=user["user_id"],
 
+        organisation=user["organisation"],
+
         digital_class=int(
             user["latent_class_digital"]
         ),
@@ -535,22 +676,29 @@ profile = extract_jobseeker_profile(
 # COURSE RETRIEVAL
 # ============================================================
 
-# Purpose: Selects the initial pool of courses to be considered by the recommender.
+# Purpose: Retrieves all courses provided by the applicant's organisation.
 
-# Selects up to 30 courses from the full course catalogue.
+def retrieve_candidate_courses(
+    courses,
+    applicant_organisation
+):
 
-def retrieve_candidate_courses(courses):
-
-    # Consider all available courses.
-
-    candidate_courses = (courses.copy())
+    candidate_courses = (
+        courses[
+            courses["provider"]
+            == applicant_organisation
+        ]
+        .copy()
+        .reset_index(drop=True)
+    )
 
     return candidate_courses
 
-# Retrieves the full course catalogue for further assessment.
 
+# An applicant can only be recommended courses from their organisation.
 candidate_courses = retrieve_candidate_courses(
-    courses=courses
+    courses=courses,
+    applicant_organisation=profile.organisation
 )
 
 
@@ -573,6 +721,21 @@ DIGITAL_LEVEL_ORDER = {
 def check_feasibility(profile, course):
 
     reasons = []
+
+    # --------------------------------------------------------
+    # Organisation / provider
+    # --------------------------------------------------------
+
+    # The applicant can only receive courses provided
+    # by their own organisation.
+    if (
+        str(course["provider"]).upper()
+        != str(profile.organisation).upper()
+    ):
+
+        reasons.append(
+            "Course is provided by another organisation."
+        )
 
     # --------------------------------------------------------
     # Course availability
@@ -1079,6 +1242,7 @@ with st.sidebar:
         st.subheader("Selected applicant")
 
         st.write(f"**Applicant:** {profile.user_id}")
+        st.write(f"**Organisation:** {profile.organisation}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
         st.write(f"**Learning preference:** {profile.delivery_preference}")
@@ -1142,7 +1306,7 @@ if demo_role == "Caseworker":
 
         st.write(
             "The system has already extracted the jobseeker profile, "
-            "retrieved relevant courses, applied the deterministic "
+            "retrieved courses from the applicant organisation, applied the deterministic "
             "feasibility filter, and ranked the remaining options. "
             "The caseworker decides which recommendations may be "
             "shown to the jobseeker."
@@ -1163,6 +1327,7 @@ if demo_role == "Caseworker":
 
         with col1:
             st.write(f"**User:** {profile.user_id}")
+            st.write(f"**Organisation:** {profile.organisation}")
             st.write(f"**Employment:** {profile.employment_status}")
 
         with col2:
@@ -1270,16 +1435,31 @@ if demo_role == "Caseworker":
                 type="primary"
             ):
 
-                st.session_state.approvals_by_user[
-                    profile.user_id
-                ] = (
-                    jobseeker_output[
-                        "course_id"
-                    ]
-                    .tolist()
-                )
+                if (
+                    profile.organisation
+                    == caseworker_organisation
+                ):
 
-                st.rerun()
+                    same_org_course_ids = (
+                        jobseeker_output[
+                            jobseeker_output["provider"]
+                            == profile.organisation
+                        ]["course_id"]
+                        .tolist()
+                    )
+
+                    st.session_state.approvals_by_user[
+                        profile.user_id
+                    ] = same_org_course_ids
+
+                    st.rerun()
+
+                else:
+
+                    st.error(
+                        "Approval blocked: caseworker and "
+                        "applicant organisations do not match."
+                    )
 
         with action_col2:
 
@@ -1430,12 +1610,23 @@ if demo_role == "Caseworker":
                         type="primary"
                     ):
 
-                        approve_course(
+                        approval_success = approve_course(
                             profile.user_id,
-                            course_id
+                            course_id,
+                            caseworker_organisation
                         )
 
-                        st.rerun()
+                        if approval_success:
+
+                            st.rerun()
+
+                        else:
+
+                            st.error(
+                                "Approval blocked: the caseworker, "
+                                "applicant and course provider must "
+                                "belong to the same organisation."
+                            )
 
         st.divider()
 
@@ -1495,13 +1686,23 @@ if demo_role == "Caseworker":
         st.title("Course catalogue")
 
         st.write(
-            "The caseworker can inspect all simulated learning "
-            "opportunities. Approval remains restricted to courses "
-            "that pass feasibility and enter the ranked recommendation set."
+            "The caseworker can inspect courses provided by "
+            "their own organisation. Approval remains restricted "
+            "to courses that pass feasibility and enter the ranked "
+            "recommendation set."
+        )
+
+        organisation_courses = (
+            courses[
+                courses["provider"]
+                == caseworker_organisation
+            ]
+            .copy()
         )
 
         st.caption(
-            f"{len(courses)} simulated courses available"
+            f"{len(organisation_courses)} "
+            f"{caseworker_organisation} courses available"
         )
 
         st.divider()
@@ -1557,7 +1758,7 @@ if demo_role == "Caseworker":
                 ]
             )
 
-        catalogue = courses.copy()
+        catalogue = organisation_courses.copy()
 
         if search_text.strip():
 
@@ -1789,6 +1990,10 @@ if demo_role == "Jobseeker":
 
     st.title("Your recommended learning")
 
+    st.caption(
+        f"Organisation: {profile.organisation}"
+    )
+
     st.markdown(
         '<div class="diamond-subtitle">'
         'Learning opportunities approved for you.'
@@ -1831,6 +2036,11 @@ if demo_role == "Jobseeker":
                 "course_id"
             ].isin(
                 approved_ids
+            )
+            &
+            (
+                jobseeker_output["provider"]
+                == profile.organisation
             )
         ]
         .copy()
