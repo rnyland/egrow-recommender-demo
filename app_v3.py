@@ -1791,8 +1791,7 @@ if demo_role == "Jobseeker":
 
     st.markdown(
         '<div class="diamond-subtitle">'
-        'Learning opportunities approved for you based on your '
-        'ᴱGROW profile, existing skills and learning needs.'
+        'Learning opportunities approved for you.'
         '</div>',
         unsafe_allow_html=True
     )
