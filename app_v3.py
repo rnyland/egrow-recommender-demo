@@ -1076,7 +1076,7 @@ with st.sidebar:
 
         st.divider()
 
-        st.subheader("Selected jobseeker")
+        st.subheader("Selected applicant")
 
         st.write(f"**User:** {profile.user_id}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
