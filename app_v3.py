@@ -1078,7 +1078,7 @@ with st.sidebar:
 
         st.subheader("Selected applicant")
 
-        st.write(f"**User:** {profile.user_id}")
+        st.write(f"**Applicant:** {profile.user_id}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
         st.write(f"**Learning preference:** {profile.delivery_preference}")
