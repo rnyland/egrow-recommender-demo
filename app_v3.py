@@ -100,7 +100,11 @@ st.markdown(
 # LOAD BASE DATA
 # ============================================================
 
-@st.cache_data
+# Clear cached data while testing updated synthetic datasets
+st.cache_data.clear()
+
+
+@st.cache_data(show_spinner=False)
 def load_data():
 
     jobseekers = pd.read_pickle(
