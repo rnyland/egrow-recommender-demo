@@ -1287,31 +1287,33 @@ if demo_role == "Caseworker":
 
         with col3:
             st.write(f"**Delivery:** {profile.delivery_preference}")
-            st.write(f"**Availability:** {profile.availability}")
             st.write(f"**Confidence:** {profile.profile_confidence}")
 
         with st.expander("View additional profile information"):
 
-            st.write(f"**Education:** {profile.education_level}")
-            st.write(f"**Location:** {profile.city}, {profile.country}")
+    st.write(
+        f"**Age:** {profile.age}"
+    )
 
-            st.write(
-                "**Work history:** "
-                + (
-                    ", ".join(profile.work_history)
-                    if profile.work_history
-                    else "None recorded"
-                )
-            )
+    st.write(
+        f"**Education:** {profile.education_level}"
+    )
 
-            st.write(
-                "**Previous courses:** "
-                + (
-                    ", ".join(profile.previous_courses)
-                    if profile.previous_courses
-                    else "None recorded"
-                )
-            )
+    st.write(
+        f"**Location:** {profile.city}, {profile.country}"
+    )
+
+    st.write(
+        f"**Program status:** {profile.program_status}"
+    )
+
+    st.write(
+        f"**Accessibility need:** {profile.accessibility_need}"
+    )
+
+    st.write(
+        f"**Previous course count:** {profile.previous_course_count}"
+    )
 
         st.divider()
 
