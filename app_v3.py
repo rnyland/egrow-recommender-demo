@@ -1081,7 +1081,7 @@ with st.sidebar:
         st.write(f"**User:** {profile.user_id}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
-        st.write(f"**Delivery:** {profile.delivery_preference}")
+        st.write(f"**Learning preference:** {profile.delivery_preference}")
 
         approved_ids_sidebar = (
             st.session_state.approvals_by_user.get(
