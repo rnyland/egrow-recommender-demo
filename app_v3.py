@@ -328,7 +328,6 @@ class JobSeekerProfile:
 CRITICAL_PROFILE_FIELDS = [
     "digital_profile",
     "green_profile",
-    "preferred_language",
     "delivery_preference"
 ]
 
@@ -1082,7 +1081,6 @@ with st.sidebar:
         st.write(f"**User:** {profile.user_id}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
-        st.write(f"**Language:** {profile.preferred_language}")
         st.write(f"**Delivery:** {profile.delivery_preference}")
 
         approved_ids_sidebar = (
