@@ -181,9 +181,9 @@ selected_user = (
 # Session State: Temporarily remembers user interactions and 
 # caseworker decisions while the prototype is being used.
 
-# Stores courses the applicant marks as interesting.
-if "interested_courses" not in st.session_state:
-    st.session_state.interested_courses = []
+# Stores courses the applicant signs up for.
+if "signed_up_courses" not in st.session_state:
+    st.session_state.signed_up_courses = []
 
 # Remembers which courses the user is currently viewing.
 if "viewed_course" not in st.session_state:
@@ -204,7 +204,7 @@ if "active_user_id" not in st.session_state:
 # Resets the interface when switching to another applicant. 
 elif st.session_state.active_user_id != selected_user_id:
     st.session_state.active_user_id = selected_user_id
-    st.session_state.interested_courses = []
+    st.session_state.signed_up_courses = []
     st.session_state.viewed_course = None
 
 
@@ -212,10 +212,10 @@ elif st.session_state.active_user_id != selected_user_id:
 # HELPER FUNCTIONS
 # ============================================================
 
-# Marks a course as interesting for the applicant (Change to sign-up instead of interesting).
-def mark_interested(course_id):
-    if course_id not in st.session_state.interested_courses:
-        st.session_state.interested_courses.append(course_id)
+# Signs the applicant up for a selected course.
+def sign_up_for_course(course_id):
+    if course_id not in st.session_state.signed_up_courses:
+        st.session_state.signed_up_courses.append(course_id)
 
 # Opens a selected course.
 def open_course(course_id):
@@ -262,7 +262,7 @@ user_id = selected_user_id
 # Basic selected-user information
 digital_profile = selected_user["digital_profile"]
 green_profile = selected_user["green_profile"]
-preferred_language = selected_user["preferred_language"] (Remove this)
+preferred_language = selected_user["preferred_language"]
 delivery_preference = selected_user["delivery_preference"] 
 
 # ============================================================
@@ -1107,22 +1107,21 @@ with st.sidebar:
             "Only caseworker-approved recommendations "
             "are visible in this jobseeker view."
         )
-
-        if st.session_state.interested_courses:
+        
+        if st.session_state.signed_up_courses:
 
             st.divider()
 
-            st.subheader("I'm interested in")
+            st.subheader("My course sign-ups")
 
-            interested_rows = courses[
+            signed_up_rows = courses[
                 courses["course_id"].isin(
-                    st.session_state.interested_courses
+                    st.session_state.signed_up_courses
                 )
             ]
 
-            for _, course in interested_rows.iterrows():
+            for _, course in signed_up_rows.iterrows():
                 st.write(f"✓ {course['title']}")
-
 
 # ============================================================
 # CASEWORKER VIEW
@@ -1976,27 +1975,26 @@ if demo_role == "Jobseeker":
 
         if (
             detail["course_id"]
-            in st.session_state.interested_courses
+            in st.session_state.signed_up_courses
         ):
 
             st.success(
-                "✓ You have marked this learning "
-                "opportunity as interesting."
+                "✓ You have signed up for this course."
             )
 
         else:
 
             if st.button(
-                "I'm interested",
+                "Sign up",
                 key=(
-                    f"user_interest_detail_"
+                    f"user_signup_detail_"
                     f"{profile.user_id}_"
                     f"{detail['course_id']}"
                 ),
                 type="primary"
             ):
 
-                mark_interested(
+                sign_up_for_course(
                     detail["course_id"]
                 )
 
@@ -2097,51 +2095,51 @@ if demo_role == "Jobseeker":
 
                 if (
                     row["course_id"]
-                    in st.session_state.interested_courses
+                    in st.session_state.signed_up_courses
                 ):
 
                     st.success(
-                        "✓ Interested"
+                        "✓ Signed up"
                     )
 
                 else:
 
                     if st.button(
-                        "I'm interested",
+                        "Sign up",
                         key=(
-                            f"user_interest_"
+                            f"user_signup_"
                             f"{profile.user_id}_"
                             f"{row['course_id']}"
                         ),
                         type="primary"
                     ):
 
-                        mark_interested(
+                        sign_up_for_course(
                             row["course_id"]
                         )
 
                         st.rerun()
 
-    if st.session_state.interested_courses:
+    if st.session_state.signed_up_courses:
 
         st.divider()
 
         st.subheader(
-            "Learning opportunities you are interested in"
+            "Courses you have signed up for"
         )
 
-        interested_approved = (
+        signed_up_approved = (
             approved_recommendations[
                 approved_recommendations[
                     "course_id"
                 ].isin(
-                    st.session_state.interested_courses
+                    st.session_state.signed_up_courses
                 )
             ]
         )
 
         for _, course in (
-            interested_approved.iterrows()
+            signed_up_approved.iterrows()
         ):
 
             st.write(
@@ -2149,8 +2147,9 @@ if demo_role == "Jobseeker":
             )
 
         st.info(
-            "In the full DIAMOND workflow, this feedback "
-            "would be recorded and used in the feedback loop."
+            "In the full DIAMOND workflow, course sign-ups "
+            "would be recorded and communicated to the "
+            "relevant learning platform."
         )
 
     st.divider()
