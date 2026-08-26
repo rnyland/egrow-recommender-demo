@@ -123,6 +123,13 @@ jobseekers, courses = load_data()
 # DEMO ROLE + SELECT JOBSEEKER
 # ============================================================
 
+# Purpose: Selects whether the prototype is viewed as a caseworker 
+# or applicant and selects the applicant whose data are used.
+
+# Create the switch option in the sidebar to choose which version to see.
+# * Caseworker    --> Professional view (default selection)
+# * Jobseeker     --> Applicant view
+
 demo_role = st.sidebar.radio(
     "Demo as",
     options=[
@@ -132,11 +139,16 @@ demo_role = st.sidebar.radio(
     index=0
 )
 
+# Make a list of all simulated applicants from the applicant list and collect their user IDs.
+# Feed the list to dropdown menu.
+
 user_options = (
     jobseekers["user_id"]
     .sort_values()
     .tolist()
 )
+
+# Change the label depending on the selected view.
 
 user_selector_label = (
     "Select jobseeker to review"
@@ -144,10 +156,16 @@ user_selector_label = (
     else "Simulated login"
 )
 
+# Make it possible to select an applicant.
+# Define the selected applicant.
+
 selected_user_id = st.sidebar.selectbox(
     user_selector_label,
     options=user_options
 )
+
+# Retrieve the applicant's data.
+# e.g., EGROW profile and learning preferences.
 
 selected_user = (
     jobseekers[
@@ -160,24 +178,30 @@ selected_user = (
 # SESSION STATE
 # ============================================================
 
+# Session State: Temporarily remembers user interactions and 
+# caseworker decisions while the prototype is being used.
+
+# Stores courses the applicant marks as interesting.
 if "interested_courses" not in st.session_state:
     st.session_state.interested_courses = []
 
+# Remembers which courses the user is currently viewing.
 if "viewed_course" not in st.session_state:
     st.session_state.viewed_course = None
 
-
-# Caseworker approvals are stored per simulated user for this browser session.
+# Stores the saseworker's approved courses for each applicant.
 if "approvals_by_user" not in st.session_state:
     st.session_state.approvals_by_user = {}
 
+# Creates an empty approval list for a newly selected applicant.
 if selected_user_id not in st.session_state.approvals_by_user:
     st.session_state.approvals_by_user[selected_user_id] = []
 
-# Reset user-specific UI state when another simulated user is selected
+# Keeps track of which simulated jobseeker is currently selected.
 if "active_user_id" not in st.session_state:
     st.session_state.active_user_id = selected_user_id
 
+# Resets the interface when switching to another applicant. 
 elif st.session_state.active_user_id != selected_user_id:
     st.session_state.active_user_id = selected_user_id
     st.session_state.interested_courses = []
@@ -188,20 +212,20 @@ elif st.session_state.active_user_id != selected_user_id:
 # HELPER FUNCTIONS
 # ============================================================
 
+# Marks a course as interesting for the applicant (Change to sign-up instead of interesting).
 def mark_interested(course_id):
     if course_id not in st.session_state.interested_courses:
         st.session_state.interested_courses.append(course_id)
 
-
+# Opens a selected course.
 def open_course(course_id):
     st.session_state.viewed_course = course_id
 
-
+# Closes the selected course.
 def close_course():
     st.session_state.viewed_course = None
 
-
-
+# Approves a course for a specific applicant. 
 def approve_course(user_id, course_id):
     approved = st.session_state.approvals_by_user.setdefault(
         user_id,
@@ -211,7 +235,7 @@ def approve_course(user_id, course_id):
     if course_id not in approved:
         approved.append(course_id)
 
-
+# Removes a caseworker's course approval.
 def remove_course_approval(user_id, course_id):
     approved = st.session_state.approvals_by_user.setdefault(
         user_id,
@@ -221,7 +245,7 @@ def remove_course_approval(user_id, course_id):
     if course_id in approved:
         approved.remove(course_id)
 
-
+# Removes all course approvals for a specific applicant.
 def clear_user_approvals(user_id):
     st.session_state.approvals_by_user[user_id] = []
 
@@ -230,21 +254,27 @@ def clear_user_approvals(user_id):
 # USER SELECTION
 # ============================================================
 
+# Purpose: Retrieves the selected applicant's key profile information.
+
+# Identify the currently selected applicant.
 user_id = selected_user_id
 
 # Basic selected-user information
 digital_profile = selected_user["digital_profile"]
 green_profile = selected_user["green_profile"]
-preferred_language = selected_user["preferred_language"]
-delivery_preference = selected_user["delivery_preference"]
+preferred_language = selected_user["preferred_language"] (Remove this)
+delivery_preference = selected_user["delivery_preference"] 
 
 # ============================================================
 # PROFILE EXTRACTION
 # ============================================================
 
+# Purpose: Builds and checks a structured profile for the selected applicant.
+
 from dataclasses import dataclass, field
 from typing import Optional
 
+# Defines which information is stored in a jobseeker profile.
 
 @dataclass
 class JobSeekerProfile:
@@ -293,6 +323,7 @@ class JobSeekerProfile:
         default_factory=list
     )
 
+# Defines the information required before recommendations can be made.
 
 CRITICAL_PROFILE_FIELDS = [
     "digital_profile",
@@ -304,6 +335,8 @@ CRITICAL_PROFILE_FIELDS = [
 
 def extract_jobseeker_profile(user):
 
+    # Checks whether required profile information is missing.
+    
     missing_fields = []
 
     for field_name in CRITICAL_PROFILE_FIELDS:
@@ -317,6 +350,8 @@ def extract_jobseeker_profile(user):
         ):
             missing_fields.append(field_name)
 
+    # Checks for conflicting information from different data sources.
+    
     conflicts = []
 
     questionnaire = user.get(
@@ -365,6 +400,8 @@ def extract_jobseeker_profile(user):
             "and platform profile."
         )
 
+    # Assesses how reliable and complete the applicant's profile is.
+    
     if len(missing_fields) == 0 and len(conflicts) == 0:
         profile_confidence = "high"
 
@@ -374,6 +411,8 @@ def extract_jobseeker_profile(user):
     else:
         profile_confidence = "low"
 
+    # Identifies issues that prevent the system from making recommendations.
+    
     blockers = []
 
     if missing_fields:
@@ -387,8 +426,12 @@ def extract_jobseeker_profile(user):
             "Profile confidence is too low."
         )
 
+    # Determines whether the profile is ready for recommendations.
+    
     can_recommend = len(blockers) == 0
 
+    # Combines all available applicant information into one structured profile.
+    
     profile = JobSeekerProfile(
 
         user_id=user["user_id"],
@@ -482,6 +525,8 @@ def extract_jobseeker_profile(user):
 
     return profile
 
+# Creates the profile for the currently selected jobseeker.
+
 profile = extract_jobseeker_profile(
     selected_user
 )
@@ -491,28 +536,22 @@ profile = extract_jobseeker_profile(
 # COURSE RETRIEVAL
 # ============================================================
 
-def retrieve_candidate_courses(
-    courses,
-    max_candidates=30
-):
+# Purpose: Selects the initial pool of courses to be considered by the recommender.
 
-    # No skill-based or target-role-based retrieval is used.
-    # The prototype keeps a broad course pool and lets the
-    # feasibility and digital/green ranking stages determine
-    # which learning opportunities are most suitable.
+# Selects up to 30 courses from the full course catalogue.
 
-    candidate_courses = (
-        courses
-        .head(max_candidates)
-        .copy()
-    )
+def retrieve_candidate_courses(courses):
+
+    # Consider all available courses.
+
+    candidate_courses = (courses.copy())
 
     return candidate_courses
 
+# Retrieves the full course catalogue for further assessment.
 
 candidate_courses = retrieve_candidate_courses(
-    courses=courses,
-    max_candidates=30
+    courses=courses
 )
 
 
@@ -520,12 +559,17 @@ candidate_courses = retrieve_candidate_courses(
 # FEASIBILITY FILTER
 # ============================================================
 
+# Purpose: Removes courses that are not practically suitable for the applicant.
+
+# Defines the order of digital capability levels.
+
 DIGITAL_LEVEL_ORDER = {
     "low": 1,
     "medium": 2,
     "high": 3
 }
 
+# Checks whether each course is feasible for the selected applicant.
 
 def check_feasibility(profile, course):
 
@@ -535,6 +579,8 @@ def check_feasibility(profile, course):
     # Course availability
     # --------------------------------------------------------
 
+    # Checks whether the course is open and has available places.
+    
     if course["course_status"] != "open":
         reasons.append("Course is not open.")
 
@@ -542,21 +588,11 @@ def check_feasibility(profile, course):
         reasons.append("No available places.")
 
     # --------------------------------------------------------
-    # Language
-    # --------------------------------------------------------
-
-    if (
-        str(course["language"]).lower()
-        != str(profile.preferred_language).lower()
-    ):
-        reasons.append(
-            "Language does not match preferred language."
-        )
-
-    # --------------------------------------------------------
     # Delivery mode
     # --------------------------------------------------------
 
+    # Checks whether the delivery mode matches the applicant's preference.
+    
     user_delivery = str(
         profile.delivery_preference
     ).lower()
@@ -582,22 +618,11 @@ def check_feasibility(profile, course):
         )
 
     # --------------------------------------------------------
-    # Availability / workload
-    # --------------------------------------------------------
-
-    if (
-        str(profile.availability).lower() == "part_time"
-        and str(course["workload"]).lower() == "full_time"
-    ):
-        reasons.append(
-            "Course workload is full-time, "
-            "but user is available part-time."
-        )
-
-    # --------------------------------------------------------
     # Digital readiness
     # --------------------------------------------------------
 
+    # Checks whether the jobseeker has the digital level required for the course.
+    
     user_digital = DIGITAL_LEVEL_ORDER.get(
         str(profile.digital_level).lower(),
         0
@@ -617,6 +642,8 @@ def check_feasibility(profile, course):
     # Accessibility support
     # --------------------------------------------------------
 
+    # Checks whether required accessibility support is available.
+    
     support_need = str(
         profile.accessibility_need
     ).lower()
@@ -641,6 +668,8 @@ def check_feasibility(profile, course):
     # Previously completed course
     # --------------------------------------------------------
 
+    # Excludes courses the jobseeker has already completed.
+    
     previous_courses = [
         str(x).lower()
         for x in profile.previous_courses
@@ -659,29 +688,43 @@ def check_feasibility(profile, course):
 # APPLY FEASIBILITY FILTER
 # ============================================================
 
+# Purpose: Applies the feasibility checks to all candidate courses and keeps only the feasible ones.
+
+# Creates an empty list to store the feasibility results.
+
 feasibility_results = []
 
-for _, course in candidate_courses.iterrows():
+# Checks every candidate course against the feasibility rules.
 
+for _, course in candidate_courses.iterrows():
+    
+    # Records whether the course is feasible and why it may be excluded.
+    
     feasible, reasons = check_feasibility(
         profile,
         course
     )
 
+    # Adds the feasibility result to the course information.
+    
     course_record = course.to_dict()
 
     course_record["feasible"] = feasible
     course_record["infeasible_reasons"] = reasons
 
+    # Stores the result for later use.
+    
     feasibility_results.append(
         course_record
     )
 
+# Converts all feasibility results into a dataframe.
 
 feasibility_results = pd.DataFrame(
     feasibility_results
 )
 
+# Creates an empty result if no courses were assessed.
 
 if feasibility_results.empty:
 
@@ -691,6 +734,8 @@ if feasibility_results.empty:
             "infeasible_reasons"
         ]
     )
+    
+# Keeps only courses that passed all feasibility checks.
 
 else:
 
@@ -707,14 +752,16 @@ else:
 # RANKING / MATCHING
 # ============================================================
 
-# Skill fit and target-role fit have been removed.
-# The recommendation score is now based only on
-# digital fit and green fit.
+# Purpose: Scores and ranks feasible courses based on digital and green fit.
+
+# Sets how much digital and green fit contribute to the final score.
+
 RANKING_WEIGHTS = {
-    "digital_fit": 0.60,
-    "green_fit": 0.40
+    "digital_fit": 0.50,
+    "green_fit": 0.50
 }
 
+# Calculates how well the course's digital level matches the jobseeker.
 
 def calculate_digital_fit(profile, course):
 
@@ -730,6 +777,8 @@ def calculate_digital_fit(profile, course):
         0
     )
 
+    # Gives a higher score when the course level closely matches the user's digital level.
+    
     if user_level == required_level:
         return 100.0
 
@@ -741,6 +790,7 @@ def calculate_digital_fit(profile, course):
 
     return 0.0
 
+# Calculates how well the course's green relevance matches the jobseeker's green profile.
 
 def calculate_green_fit(profile, course):
 
@@ -748,7 +798,8 @@ def calculate_green_fit(profile, course):
         course["green_relevance"]
     ).lower()
 
-    # TEMPORARY PROTOTYPE LOGIC
+    # Assigns a green-fit score based on the user's green profile class.
+    
     if profile.green_class == 1:
 
         score_map = {
@@ -772,6 +823,7 @@ def calculate_green_fit(profile, course):
         )
     )
 
+# Calculates a final score for every feasible course.
 
 def rank_courses(
     profile,
@@ -796,6 +848,8 @@ def rank_courses(
             )
         )
 
+        # Combines digital fit and green fit into one recommendation score.
+        
         final_score = (
             digital_score
             * RANKING_WEIGHTS[
@@ -833,6 +887,8 @@ def rank_courses(
     if ranked.empty:
         return ranked
 
+    # Sorts courses from highest to lowest match score.
+    
     ranked = (
         ranked
         .sort_values(
@@ -842,6 +898,8 @@ def rank_courses(
         .reset_index(drop=True)
     )
 
+    # Adds a ranking number to each course.
+    
     ranked["rank"] = range(
         1,
         len(ranked) + 1
@@ -849,16 +907,17 @@ def rank_courses(
 
     return ranked
 
+# Runs the ranking process on all feasible courses.
 
 ranked_courses = rank_courses(
     profile=profile,
     feasible_courses=feasible_courses
 )
 
+# Keeps all ranked feasible courses as recommendations.
 
 top_recommendations = (
     ranked_courses
-    .head(5)
     .copy()
 )
 
