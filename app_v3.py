@@ -416,7 +416,6 @@ delivery_preference = selected_user["delivery_preference"]
 from dataclasses import dataclass, field
 from typing import Optional
 
-# Defines which information is stored in a jobseeker profile.
 
 @dataclass
 class JobSeekerProfile:
@@ -440,23 +439,14 @@ class JobSeekerProfile:
     employment_status: Optional[str]
     program_status: Optional[str]
 
-    skills: list = field(default_factory=list)
-    work_history: list = field(default_factory=list)
+    delivery_preference: Optional[str]
+    accessibility_need: Optional[str]
 
-    availability: Optional[str] = None
-    delivery_preference: Optional[str] = None
-    transport_limitations: Optional[str] = None
+    previous_course_count: int = 0
 
-    accessibility_need: Optional[str] = None
-
-    previous_courses: list = field(default_factory=list)
-
-    motivation_level: Optional[str] = None
-    case_notes: Optional[str] = None
-    cv_text: Optional[str] = None
-
-    missing_fields: list = field(default_factory=list)
-    conflicts_found: list = field(default_factory=list)
+    missing_fields: list = field(
+        default_factory=list
+    )
 
     profile_confidence: str = "low"
 
@@ -466,9 +456,10 @@ class JobSeekerProfile:
         default_factory=list
     )
 
-# Defines the information required before recommendations can be made.
 
+# Defines the minimum information required for recommendations.
 CRITICAL_PROFILE_FIELDS = [
+    "organisation",
     "digital_profile",
     "green_profile",
     "delivery_preference"
@@ -477,130 +468,121 @@ CRITICAL_PROFILE_FIELDS = [
 
 def extract_jobseeker_profile(user):
 
-    # Checks whether required profile information is missing.
-    
+    # --------------------------------------------------------
+    # Check required information
+    # --------------------------------------------------------
+
     missing_fields = []
 
     for field_name in CRITICAL_PROFILE_FIELDS:
 
-        value = user.get(field_name, None)
+        value = user.get(
+            field_name,
+            None
+        )
 
         if (
             value is None
             or pd.isna(value)
             or value == ""
         ):
-            missing_fields.append(field_name)
 
-    # Checks for conflicting information from different data sources.
-    
-    conflicts = []
+            missing_fields.append(
+                field_name
+            )
 
-    questionnaire = user.get(
-        "questionnaire_answers",
-        {}
-    )
 
-    platform = user.get(
-        "platform_profile",
-        {}
-    )
+    # --------------------------------------------------------
+    # Profile confidence
+    # --------------------------------------------------------
 
-    questionnaire_language = questionnaire.get(
-        "preferred_language"
-    )
+    if len(missing_fields) == 0:
 
-    platform_language = platform.get(
-        "preferred_language"
-    )
-
-    if (
-        questionnaire_language is not None
-        and platform_language is not None
-        and questionnaire_language != platform_language
-    ):
-        conflicts.append(
-            "Preferred language differs between questionnaire "
-            "and platform profile."
-        )
-
-    questionnaire_delivery = questionnaire.get(
-        "delivery_preference"
-    )
-
-    platform_delivery = platform.get(
-        "delivery_preference"
-    )
-
-    if (
-        questionnaire_delivery is not None
-        and platform_delivery is not None
-        and questionnaire_delivery != platform_delivery
-    ):
-        conflicts.append(
-            "Delivery preference differs between questionnaire "
-            "and platform profile."
-        )
-
-    # Assesses how reliable and complete the applicant's profile is.
-    
-    if len(missing_fields) == 0 and len(conflicts) == 0:
         profile_confidence = "high"
 
-    elif len(missing_fields) <= 1 and len(conflicts) <= 1:
+    elif len(missing_fields) == 1:
+
         profile_confidence = "medium"
 
     else:
+
         profile_confidence = "low"
 
-    # Identifies issues that prevent the system from making recommendations.
-    
+
+    # --------------------------------------------------------
+    # Recommendation blockers
+    # --------------------------------------------------------
+
     blockers = []
 
     if missing_fields:
+
         blockers.append(
             "Missing critical information: "
             + ", ".join(missing_fields)
         )
 
     if profile_confidence == "low":
+
         blockers.append(
             "Profile confidence is too low."
         )
 
-    # Determines whether the profile is ready for recommendations.
-    
-    can_recommend = len(blockers) == 0
 
-    # Combines all available applicant information into one structured profile.
-    
+    can_recommend = (
+        len(blockers) == 0
+    )
+
+
+    # --------------------------------------------------------
+    # Create structured applicant profile
+    # --------------------------------------------------------
+
     profile = JobSeekerProfile(
 
         user_id=user["user_id"],
 
-        organisation=user["organisation"],
+        organisation=user[
+            "organisation"
+        ],
 
         digital_class=int(
-            user["latent_class_digital"]
+            user[
+                "latent_class_digital"
+            ]
         ),
 
-        digital_profile=user["digital_profile"],
+        digital_profile=user[
+            "digital_profile"
+        ],
 
-        digital_level=user["digital_level"],
+        digital_level=user[
+            "digital_level"
+        ],
 
         green_class=int(
-            user["latent_class_green"]
+            user[
+                "latent_class_green"
+            ]
         ),
 
-        green_profile=user["green_profile"],
+        green_profile=user[
+            "green_profile"
+        ],
 
-        age=int(user["age"])
-        if pd.notna(user["age"])
-        else None,
+        age=(
+            int(user["age"])
+            if pd.notna(user["age"])
+            else None
+        ),
 
-        country=user["country"],
+        country=user[
+            "country"
+        ],
 
-        city=user["city"],
+        city=user[
+            "city"
+        ],
 
         preferred_language=user[
             "preferred_language"
@@ -618,59 +600,38 @@ def extract_jobseeker_profile(user):
             "program_status"
         ],
 
-        skills=user["skills"],
-
-        work_history=user[
-            "work_history"
-        ],
-
-        availability=user[
-            "availability"
-        ],
-
         delivery_preference=user[
             "delivery_preference"
-        ],
-
-        transport_limitations=user[
-            "transport_limitations"
         ],
 
         accessibility_need=user[
             "accessibility_need"
         ],
 
-        previous_courses=user[
-            "previous_courses"
-        ],
-
-        motivation_level=user[
-            "motivation_level"
-        ],
-
-        case_notes=user[
-            "case_notes"
-        ],
-
-        cv_text=user[
-            "cv_text"
-        ],
+        previous_course_count=int(
+            user.get(
+                "previous_course_count",
+                0
+            )
+        ),
 
         missing_fields=missing_fields,
 
-        conflicts_found=conflicts,
-
-        profile_confidence=profile_confidence,
+        profile_confidence=(
+            profile_confidence
+        ),
 
         can_recommend=can_recommend,
 
-        recommendation_blockers=blockers
+        recommendation_blockers=(
+            blockers
+        )
     )
 
     return profile
 
-# Creates the profile for the currently selected jobseeker.
 
+# Creates the profile for the currently selected applicant.
 profile = extract_jobseeker_profile(
     selected_user
 )
@@ -830,21 +791,6 @@ def check_feasibility(profile, course):
                 "is not available."
             )
 
-    # --------------------------------------------------------
-    # Previously completed course
-    # --------------------------------------------------------
-
-    # Excludes courses the jobseeker has already completed.
-    
-    previous_courses = [
-        str(x).lower()
-        for x in profile.previous_courses
-    ]
-
-    if str(course["title"]).lower() in previous_courses:
-        reasons.append(
-            "Course has already been completed."
-        )
 
     return len(reasons) == 0, reasons
 
