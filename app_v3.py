@@ -904,23 +904,32 @@ def calculate_digital_fit(profile, course):
 # Calculates how closely the applicant's green capability
 # matches the green level of the course.
 
+# ------------------------------------------------------------
+# B) GREEN FIT
+# ------------------------------------------------------------
+
+# Calculates how closely the applicant's green profile
+# matches the green relevance of the course.
+
 def calculate_green_fit(
     profile,
     course
 ):
 
-    # Converts course green relevance into the same 1–3 scale.
-    GREEN_RELEVANCE_ORDER = {
+    # Converts green levels into a 1–3 scale.
+    GREEN_LEVEL_ORDER = {
         "low": 1,
         "medium": 2,
         "high": 3
     }
 
-    user_level = GREEN_CLASS_TO_LEVEL.get(
-        profile.green_class
+    # Applicant's green level
+    user_level = GREEN_LEVEL_ORDER.get(
+        str(profile.green_profile).lower()
     )
 
-    course_level = GREEN_RELEVANCE_ORDER.get(
+    # Course's green level
+    course_level = GREEN_LEVEL_ORDER.get(
         str(course["green_relevance"]).lower()
     )
 
@@ -928,7 +937,7 @@ def calculate_green_fit(
     if user_level is None or course_level is None:
         return 0.0
 
-    # Calculates how far apart the applicant and course are.
+    # Calculate distance between applicant and course
     difference = abs(
         user_level - course_level
     )
