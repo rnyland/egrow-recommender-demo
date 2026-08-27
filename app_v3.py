@@ -877,7 +877,7 @@ def calculate_digital_fit(profile, course):
 
     # Fallback mechanism if an unexpected value occurs
     if user_level is None or course_level is None:
-    return 0.0
+        return 0.0
     
     difference = abs(
         user_level - course_level
