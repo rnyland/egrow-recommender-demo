@@ -404,7 +404,6 @@ user_id = selected_user_id
 # Basic selected-user information
 digital_profile = selected_user["digital_profile"]
 green_profile = selected_user["green_profile"]
-preferred_language = selected_user["preferred_language"]
 learning_styles = selected_user["learning_styles"] 
 
 # ============================================================
