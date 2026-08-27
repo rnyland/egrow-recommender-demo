@@ -1166,15 +1166,6 @@ with st.sidebar:
 
         st.subheader("Caseworker workspace")
 
-        caseworker_page = st.radio(
-            "Navigation",
-            options=[
-                "Review recommendations",
-                "Course catalogue"
-            ],
-            index=0
-        )
-
         st.divider()
 
         st.subheader("Selected applicant")
@@ -1234,21 +1225,15 @@ if demo_role == "Caseworker":
         unsafe_allow_html=True
     )
 
-    # --------------------------------------------------------
-    # CASEWORKER: REVIEW RECOMMENDATIONS
-    # --------------------------------------------------------
+    st.title("Review recommended learning")
 
-    if caseworker_page == "Review recommendations":
-
-        st.title("Review recommended learning")
-
-        st.write(
-            "The system has already extracted the jobseeker profile, "
-            "retrieved courses from the applicant organisation, applied the deterministic "
-            "feasibility filter, and ranked the remaining options. "
-            "The caseworker decides which recommendations may be "
-            "shown to the jobseeker."
-        )
+    st.write(
+        "The system has already extracted the jobseeker profile, "
+        "retrieved courses from the applicant organisation, applied the deterministic "
+        "feasibility filter, and ranked the remaining options. "
+        "The caseworker decides which recommendations may be "
+        "shown to the jobseeker."
+    )
 
         st.markdown(
             '<div class="prototype-note">'
@@ -1339,9 +1324,8 @@ if demo_role == "Caseworker":
                         )
 
             st.info(
-                "The full catalogue can still be inspected from "
-                "the caseworker navigation, but only feasible ranked "
-                "courses can be approved for the jobseeker."
+                "Only courses that pass the feasibility filter "
+                "can enter the recommendation and approval process."
             )
 
             st.stop()
@@ -1597,307 +1581,6 @@ if demo_role == "Caseworker":
             )
 
         st.stop()
-
-
-    # --------------------------------------------------------
-    # CASEWORKER: COURSE CATALOGUE
-    # --------------------------------------------------------
-
-    if caseworker_page == "Course catalogue":
-
-        st.title("Course catalogue")
-
-        st.write(
-            "The caseworker can inspect courses provided by "
-            "their own organisation. Approval remains restricted "
-            "to courses that pass feasibility and enter the ranked "
-            "recommendation set."
-        )
-
-        organisation_courses = (
-            courses[
-                courses["provider"]
-                == caseworker_organisation
-            ]
-            .copy()
-        )
-
-        st.caption(
-            f"{len(organisation_courses)} "
-            f"{caseworker_organisation} courses available"
-        )
-
-        st.divider()
-
-        search_text = st.text_input(
-            "Search courses",
-            placeholder=(
-                "Search by title or provider"
-            )
-        )
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-
-            delivery_filter = st.selectbox(
-                "Delivery",
-                options=["All"] + sorted(
-                    courses[
-                        "delivery_mode"
-                    ]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
-            )
-
-        with col2:
-
-            language_filter = st.selectbox(
-                "Language",
-                options=["All"] + sorted(
-                    courses[
-                        "language"
-                    ]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
-            )
-
-        with col3:
-
-            level_filter = st.selectbox(
-                "Digital level",
-                options=[
-                    "All",
-                    "low",
-                    "medium",
-                    "high"
-                ]
-            )
-
-        catalogue = organisation_courses.copy()
-
-        if search_text.strip():
-
-            query = (
-                search_text
-                .strip()
-                .lower()
-            )
-
-            def catalogue_match(row):
-
-                searchable = " ".join(
-                    [
-                        str(row.get("title", "")),
-                        str(row.get("provider", ""))
-                    ]
-                ).lower()
-
-                return query in searchable
-
-            catalogue = catalogue[
-                catalogue.apply(
-                    catalogue_match,
-                    axis=1
-                )
-            ]
-
-        if delivery_filter != "All":
-
-            catalogue = catalogue[
-                catalogue[
-                    "delivery_mode"
-                ].astype(str)
-                == delivery_filter
-            ]
-
-        if language_filter != "All":
-
-            catalogue = catalogue[
-                catalogue[
-                    "language"
-                ].astype(str)
-                == language_filter
-            ]
-
-        if level_filter != "All":
-
-            catalogue = catalogue[
-                catalogue[
-                    "digital_level_required"
-                ].astype(str)
-                == level_filter
-            ]
-
-        st.write(
-            f"**{len(catalogue)} course(s) match the current filters.**"
-        )
-
-        if catalogue.empty:
-
-            st.info(
-                "No courses match the current filters."
-            )
-
-            st.stop()
-
-        course_label_map = {
-            row["course_id"]:
-                f"{row['title']} · "
-                f"{row['provider']} · "
-                f"{row['course_id']}"
-            for _, row in catalogue.iterrows()
-        }
-
-        selected_catalogue_course_id = (
-            st.selectbox(
-                "Select a course",
-                options=(
-                    catalogue[
-                        "course_id"
-                    ]
-                    .tolist()
-                ),
-                format_func=lambda course_id:
-                    course_label_map.get(
-                        course_id,
-                        course_id
-                    )
-            )
-        )
-
-        catalogue_course = catalogue[
-            catalogue[
-                "course_id"
-            ]
-            == selected_catalogue_course_id
-        ].iloc[0]
-
-        (
-            feasible_for_user,
-            catalogue_feasibility_reasons
-        ) = check_feasibility(
-            profile,
-            catalogue_course
-        )
-
-        st.divider()
-
-        st.subheader(
-            catalogue_course["title"]
-        )
-
-        st.write(
-            f"**Provider:** "
-            f"{catalogue_course['provider']}"
-        )
-
-        if feasible_for_user:
-
-            st.success(
-                f"Feasible for {profile.user_id}"
-            )
-
-        else:
-
-            st.warning(
-                f"Not currently feasible for "
-                f"{profile.user_id}"
-            )
-
-        meta1, meta2, meta3, meta4 = st.columns(
-            4
-        )
-
-        with meta1:
-            st.metric(
-                "Delivery",
-                catalogue_course[
-                    "delivery_mode"
-                ]
-            )
-
-        with meta2:
-            st.metric(
-                "Language",
-                catalogue_course[
-                    "language"
-                ]
-            )
-
-        with meta3:
-            st.metric(
-                "Duration",
-                f"{catalogue_course['duration_weeks']} weeks"
-            )
-
-        with meta4:
-            st.metric(
-                "Digital level",
-                catalogue_course[
-                    "digital_level_required"
-                ]
-            )
-
-        st.write("**Course availability**")
-
-        st.write(
-            f"Status: "
-            f"{catalogue_course['course_status']} · "
-            f"Available places: "
-            f"{catalogue_course['available_places']}"
-        )
-
-        if not feasible_for_user:
-
-            st.write(
-                "**Why this course is not currently feasible**"
-            )
-
-            for reason in (
-                catalogue_feasibility_reasons
-            ):
-
-                st.write(f"• {reason}")
-
-        ranked_ids = (
-            set(
-                jobseeker_output[
-                    "course_id"
-                ]
-            )
-            if has_recommendations
-            else set()
-        )
-
-        if (
-            catalogue_course[
-                "course_id"
-            ] in ranked_ids
-        ):
-
-            st.info(
-                "This course is in the feasible ranked "
-                "recommendation set. Approval is managed "
-                "from 'Review recommendations'."
-            )
-
-        else:
-
-            st.caption(
-                "This course is not currently in the feasible "
-                "ranked recommendation set and therefore cannot "
-                "be approved for the jobseeker."
-            )
-
-        st.stop()
-
 
 # ============================================================
 # JOBSEEKER VIEW
