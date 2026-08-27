@@ -681,9 +681,6 @@ def check_feasibility(profile, course):
 
     # Checks whether the course is open and has available places.
     
-    if course["course_status"] != "open":
-        reasons.append("Course is not open.")
-
     if course["available_places"] <= 0:
         reasons.append("No available places.")
 
