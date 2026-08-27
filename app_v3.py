@@ -405,7 +405,7 @@ user_id = selected_user_id
 digital_profile = selected_user["digital_profile"]
 green_profile = selected_user["green_profile"]
 preferred_language = selected_user["preferred_language"]
-delivery_preference = selected_user["delivery_preference"] 
+learning_styles = selected_user["learning_styles"] 
 
 # ============================================================
 # PROFILE EXTRACTION
@@ -439,7 +439,7 @@ class JobSeekerProfile:
     employment_status: Optional[str]
     program_status: Optional[str]
 
-    delivery_preference: Optional[str]
+    learning_styles: Optional[str]
     accessibility_need: Optional[str]
 
     previous_course_count: int = 0
@@ -462,7 +462,7 @@ CRITICAL_PROFILE_FIELDS = [
     "organisation",
     "digital_profile",
     "green_profile",
-    "delivery_preference"
+    "learning_styles"
 ]
 
 
@@ -600,8 +600,8 @@ def extract_jobseeker_profile(user):
             "program_status"
         ],
 
-        delivery_preference=user[
-            "delivery_preference"
+        learning_styles=user[
+            "learning_styles"
         ],
 
         accessibility_need=user[
@@ -713,7 +713,7 @@ def check_feasibility(profile, course):
     # Checks whether the delivery mode matches the applicant's preference.
     
     user_delivery = str(
-        profile.delivery_preference
+        profile.learning_styles
     ).lower()
 
     course_delivery = str(
@@ -1174,7 +1174,7 @@ with st.sidebar:
         st.write(f"**Organisation:** {profile.organisation}")
         st.write(f"**Digital profile:** {profile.digital_profile}")
         st.write(f"**Green profile:** {profile.green_profile}")
-        st.write(f"**Learning preference:** {profile.delivery_preference}")
+        st.write(f"**Learning preference:** {profile.learning_styles}")
 
         approved_ids_sidebar = (
             st.session_state.approvals_by_user.get(
@@ -1263,7 +1263,7 @@ if demo_role == "Caseworker":
         st.write(f"**Language:** {profile.preferred_language}")
 
     with col3:
-        st.write(f"**Delivery:** {profile.delivery_preference}")
+        st.write(f"**Delivery:** {profile.learning_styles}")
         st.write(f"**Confidence:** {profile.profile_confidence}")
 
     with st.expander("View additional profile information"):
