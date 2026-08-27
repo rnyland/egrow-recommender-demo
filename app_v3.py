@@ -123,6 +123,15 @@ def load_data():
 
 jobseekers, courses = load_data()
 
+# Make sure course availability is stored as numbers
+courses["available_places"] = (
+    pd.to_numeric(
+        courses["available_places"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+)
 
 # ============================================================
 # ORGANISATIONS
@@ -681,8 +690,18 @@ def check_feasibility(profile, course):
 
     # Checks whether the course is open and has available places.
     
-    if course["available_places"] <= 0:
-        reasons.append("No available places.")
+    available_places = pd.to_numeric(
+        course["available_places"],
+        errors="coerce"
+    )
+
+    if (
+        pd.isna(available_places)
+        or available_places <= 0
+    ):
+        reasons.append(
+            "No available places."
+        )
 
     # --------------------------------------------------------
     # Delivery mode
