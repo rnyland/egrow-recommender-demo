@@ -600,13 +600,6 @@ def extract_jobseeker_profile(user):
             "accessibility_need"
         ],
 
-        previous_course_count=int(
-            user.get(
-                "previous_course_count",
-                0
-            )
-        ),
-
         missing_fields=missing_fields,
 
         profile_confidence=(
