@@ -970,7 +970,7 @@ def rank_courses(
             )
         )
 
-        Calculate green fit
+        # Calculate green fit
         green_score = (
             calculate_green_fit(
                 profile,
