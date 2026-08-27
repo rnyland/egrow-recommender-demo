@@ -1235,306 +1235,184 @@ if demo_role == "Caseworker":
         "shown to the jobseeker."
     )
 
-        st.markdown(
-            '<div class="prototype-note">'
-            '<strong>Human-in-the-loop:</strong> '
-            'Only courses approved here become visible '
-            'in the jobseeker view.'
-            '</div>',
-            unsafe_allow_html=True
+    st.markdown(
+        '<div class="prototype-note">'
+        '<strong>Human-in-the-loop:</strong> '
+        'Only courses approved here become visible '
+        'in the jobseeker view.'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    # --------------------------------------------------------
+    # JOBSEEKER PROFILE
+    # --------------------------------------------------------
+
+    st.subheader("Jobseeker profile")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.write(f"**User:** {profile.user_id}")
+        st.write(f"**Organisation:** {profile.organisation}")
+        st.write(f"**Employment:** {profile.employment_status}")
+
+    with col2:
+        st.write(f"**Digital:** {profile.digital_profile}")
+        st.write(f"**Green:** {profile.green_profile}")
+        st.write(f"**Language:** {profile.preferred_language}")
+
+    with col3:
+        st.write(f"**Delivery:** {profile.delivery_preference}")
+        st.write(f"**Confidence:** {profile.profile_confidence}")
+
+    with st.expander("View additional profile information"):
+        st.write(f"**Age:** {profile.age}")
+        st.write(f"**Education:** {profile.education_level}")
+        st.write(f"**Location:** {profile.city}, {profile.country}")
+        st.write(f"**Program status:** {profile.program_status}")
+        st.write(f"**Accessibility need:** {profile.accessibility_need}")
+        st.write(f"**Previous course count:** {profile.previous_course_count}")
+
+    st.divider()
+
+    # --------------------------------------------------------
+    # CHECK WHETHER RECOMMENDATIONS CAN BE MADE
+    # --------------------------------------------------------
+
+    if not profile.can_recommend:
+
+        st.error(
+            "The profile is not complete enough for recommendations."
         )
 
-        st.subheader("Jobseeker profile")
+        for blocker in profile.recommendation_blockers:
+            st.write(f"• {blocker}")
 
-        col1, col2, col3 = st.columns(3)
+        st.stop()
 
-        with col1:
-            st.write(f"**User:** {profile.user_id}")
-            st.write(f"**Organisation:** {profile.organisation}")
-            st.write(f"**Employment:** {profile.employment_status}")
+    # --------------------------------------------------------
+    # NO RECOMMENDATIONS
+    # --------------------------------------------------------
 
-        with col2:
-            st.write(f"**Digital:** {profile.digital_profile}")
-            st.write(f"**Green:** {profile.green_profile}")
-            st.write(f"**Language:** {profile.preferred_language}")
+    if not has_recommendations:
 
-        with col3:
-            st.write(f"**Delivery:** {profile.delivery_preference}")
-            st.write(f"**Confidence:** {profile.profile_confidence}")
-
-        with st.expander("View additional profile information"):
-            st.write(f"**Age:** {profile.age}")
-            st.write(f"**Education:** {profile.education_level}")
-            st.write(f"**Location:** {profile.city}, {profile.country}")
-            st.write(f"**Program status:** {profile.program_status}")
-            st.write(f"**Accessibility need:** {profile.accessibility_need}")
-            st.write(f"**Previous course count:** {profile.previous_course_count}")
-
-        st.divider()
-
-        if not profile.can_recommend:
-
-            st.error(
-                "The profile is not complete enough for recommendations."
-            )
-
-            for blocker in profile.recommendation_blockers:
-                st.write(f"• {blocker}")
-
-            st.stop()
-
-        if not has_recommendations:
-
-            st.warning(
-                "No feasible course recommendations were found "
-                "for this jobseeker."
-            )
-
-            if not feasibility_results.empty:
-
-                reason_counts = {}
-
-                for reasons in feasibility_results[
-                    "infeasible_reasons"
-                ]:
-
-                    for reason in reasons:
-
-                        reason_counts[reason] = (
-                            reason_counts.get(
-                                reason,
-                                0
-                            ) + 1
-                        )
-
-                if reason_counts:
-
-                    st.subheader(
-                        "Most common feasibility barriers"
-                    )
-
-                    for reason, count in sorted(
-                        reason_counts.items(),
-                        key=lambda item: item[1],
-                        reverse=True
-                    )[:5]:
-
-                        st.write(
-                            f"• {reason} ({count} course(s))"
-                        )
-
-            st.info(
-                "Only courses that pass the feasibility filter "
-                "can enter the recommendation and approval process."
-            )
-
-            st.stop()
-
-        action_col1, action_col2, _ = st.columns(
-            [1, 1, 2]
+        st.warning(
+            "No feasible course recommendations were found "
+            "for this jobseeker."
         )
 
-        with action_col1:
+        if not feasibility_results.empty:
 
-            if st.button(
-                "Approve all",
-                type="primary"
-            ):
+            reason_counts = {}
 
-                if (
-                    profile.organisation
-                    == caseworker_organisation
-                ):
+            for reasons in feasibility_results[
+                "infeasible_reasons"
+            ]:
 
-                    same_org_course_ids = (
-                        jobseeker_output[
-                            jobseeker_output["provider"]
-                            == profile.organisation
-                        ]["course_id"]
-                        .tolist()
+                for reason in reasons:
+
+                    reason_counts[reason] = (
+                        reason_counts.get(
+                            reason,
+                            0
+                        ) + 1
                     )
 
-                    st.session_state.approvals_by_user[
-                        profile.user_id
-                    ] = same_org_course_ids
+            if reason_counts:
 
-                    st.rerun()
-
-                else:
-
-                    st.error(
-                        "Approval blocked: caseworker and "
-                        "applicant organisations do not match."
-                    )
-
-        with action_col2:
-
-            if st.button(
-                "Clear approvals"
-            ):
-
-                clear_user_approvals(
-                    profile.user_id
+                st.subheader(
+                    "Most common feasibility barriers"
                 )
+
+                for reason, count in sorted(
+                    reason_counts.items(),
+                    key=lambda item: item[1],
+                    reverse=True
+                )[:5]:
+
+                    st.write(
+                        f"• {reason} ({count} course(s))"
+                    )
+
+        st.info(
+            "Only courses that pass the feasibility filter "
+            "can enter the recommendation and approval process."
+        )
+
+        st.stop()
+
+    # --------------------------------------------------------
+    # APPROVAL CONTROLS
+    # --------------------------------------------------------
+
+    action_col1, action_col2, _ = st.columns(
+        [1, 1, 2]
+    )
+
+    with action_col1:
+
+        if st.button(
+            "Approve all",
+            type="primary"
+        ):
+
+            if (
+                profile.organisation
+                == caseworker_organisation
+            ):
+
+                same_org_course_ids = (
+                    jobseeker_output[
+                        jobseeker_output["provider"]
+                        == profile.organisation
+                    ]["course_id"]
+                    .tolist()
+                )
+
+                st.session_state.approvals_by_user[
+                    profile.user_id
+                ] = same_org_course_ids
 
                 st.rerun()
 
-        st.caption(
-            "Approval status is stored for this browser session "
-            "in the prototype."
-        )
+            else:
 
-        st.divider()
+                st.error(
+                    "Approval blocked: caseworker and "
+                    "applicant organisations do not match."
+                )
 
-        for _, row in (
-            jobseeker_output
-            .sort_values("rank")
-            .iterrows()
+    with action_col2:
+
+        if st.button(
+            "Clear approvals"
         ):
 
-            course_id = row["course_id"]
-
-            approved_ids = (
-                st.session_state.approvals_by_user.get(
-                    profile.user_id,
-                    []
-                )
+            clear_user_approvals(
+                profile.user_id
             )
 
-            is_approved = (
-                course_id in approved_ids
-            )
+            st.rerun()
 
-            with st.container(
-                border=True
-            ):
+    st.caption(
+        "Approval status is stored for this browser session "
+        "in the prototype."
+    )
 
-                header_col1, header_col2 = st.columns(
-                    [4, 1]
-                )
+    st.divider()
 
-                with header_col1:
+    # --------------------------------------------------------
+    # RECOMMENDED COURSES
+    # --------------------------------------------------------
 
-                    st.caption(
-                        f"Recommendation #{int(row['rank'])}"
-                    )
+    for _, row in (
+        jobseeker_output
+        .sort_values("rank")
+        .iterrows()
+    ):
 
-                    st.subheader(
-                        row["title"]
-                    )
-
-                    st.write(
-                        f"**Provider:** {row['provider']}"
-                    )
-
-                with header_col2:
-
-                    if is_approved:
-                        st.success("✓ Approved")
-                    else:
-                        st.warning("Awaiting review")
-
-                st.write(
-                    f"**Match:** {row['match_label']} · "
-                    f"{row['final_match_score']}/100"
-                )
-
-                meta1, meta2, meta3 = st.columns(3)
-
-                with meta1:
-                    st.write(
-                        f"**Delivery**  \n"
-                        f"{row['delivery_mode']}"
-                    )
-
-                with meta2:
-                    st.write(
-                        f"**Language**  \n"
-                        f"{row['language']}"
-                    )
-
-                with meta3:
-                    st.write(
-                        f"**Duration**  \n"
-                        f"{row['duration_weeks']} weeks"
-                    )
-
-                st.write(
-                    "**Why the recommender selected this course**"
-                )
-
-                for reason in row[
-                    "reasons_for_fit"
-                ]:
-
-                    st.write(f"✓ {reason}")
-
-                if row["tradeoffs"]:
-
-                    st.write(
-                        "**Trade-offs for caseworker review**"
-                    )
-
-                    for tradeoff in row[
-                        "tradeoffs"
-                    ]:
-
-                        st.write(f"• {tradeoff}")
-
-                st.caption(
-                    "This course has already passed the "
-                    "deterministic feasibility filter."
-                )
-
-                if is_approved:
-
-                    if st.button(
-                        "Remove approval",
-                        key=(
-                            f"remove_approval_"
-                            f"{profile.user_id}_"
-                            f"{course_id}"
-                        )
-                    ):
-
-                        remove_course_approval(
-                            profile.user_id,
-                            course_id
-                        )
-
-                        st.rerun()
-
-                else:
-
-                    if st.button(
-                        "Approve for jobseeker",
-                        key=(
-                            f"approve_"
-                            f"{profile.user_id}_"
-                            f"{course_id}"
-                        ),
-                        type="primary"
-                    ):
-
-                        approval_success = approve_course(
-                            profile.user_id,
-                            course_id,
-                            caseworker_organisation
-                        )
-
-                        if approval_success:
-
-                            st.rerun()
-
-                        else:
-
-                            st.error(
-                                "Approval blocked: the caseworker, "
-                                "applicant and course provider must "
-                                "belong to the same organisation."
-                            )
-
-        st.divider()
+        course_id = row["course_id"]
 
         approved_ids = (
             st.session_state.approvals_by_user.get(
@@ -1543,44 +1421,197 @@ if demo_role == "Caseworker":
             )
         )
 
-        st.subheader(
-            "Caseworker decision summary"
+        is_approved = (
+            course_id in approved_ids
         )
 
-        if approved_ids:
+        with st.container(
+            border=True
+        ):
 
-            approved_summary = jobseeker_output[
-                jobseeker_output[
-                    "course_id"
-                ].isin(
-                    approved_ids
-                )
-            ]
-
-            st.success(
-                f"{len(approved_summary)} course(s) approved "
-                "for the jobseeker view."
+            header_col1, header_col2 = st.columns(
+                [4, 1]
             )
 
-            for _, approved_course in (
-                approved_summary
-                .sort_values("rank")
-                .iterrows()
-            ):
+            with header_col1:
+
+                st.caption(
+                    f"Recommendation #{int(row['rank'])}"
+                )
+
+                st.subheader(
+                    row["title"]
+                )
 
                 st.write(
-                    f"✓ #{int(approved_course['rank'])} "
-                    f"{approved_course['title']}"
+                    f"**Provider:** {row['provider']}"
                 )
 
-        else:
+            with header_col2:
 
-            st.info(
-                "No courses have been approved yet. "
-                "The jobseeker will not see any recommendations."
+                if is_approved:
+                    st.success("✓ Approved")
+                else:
+                    st.warning("Awaiting review")
+
+            st.write(
+                f"**Match:** {row['match_label']} · "
+                f"{row['final_match_score']}/100"
             )
 
-        st.stop()
+            meta1, meta2, meta3 = st.columns(3)
+
+            with meta1:
+                st.write(
+                    f"**Delivery**  \n"
+                    f"{row['delivery_mode']}"
+                )
+
+            with meta2:
+                st.write(
+                    f"**Language**  \n"
+                    f"{row['language']}"
+                )
+
+            with meta3:
+                st.write(
+                    f"**Duration**  \n"
+                    f"{row['duration_weeks']} weeks"
+                )
+
+            st.write(
+                "**Why the recommender selected this course**"
+            )
+
+            for reason in row[
+                "reasons_for_fit"
+            ]:
+
+                st.write(f"✓ {reason}")
+
+            if row["tradeoffs"]:
+
+                st.write(
+                    "**Trade-offs for caseworker review**"
+                )
+
+                for tradeoff in row[
+                    "tradeoffs"
+                ]:
+
+                    st.write(f"• {tradeoff}")
+
+            st.caption(
+                "This course has already passed the "
+                "deterministic feasibility filter."
+            )
+
+            # ------------------------------------------------
+            # INDIVIDUAL APPROVAL
+            # ------------------------------------------------
+
+            if is_approved:
+
+                if st.button(
+                    "Remove approval",
+                    key=(
+                        f"remove_approval_"
+                        f"{profile.user_id}_"
+                        f"{course_id}"
+                    )
+                ):
+
+                    remove_course_approval(
+                        profile.user_id,
+                        course_id
+                    )
+
+                    st.rerun()
+
+            else:
+
+                if st.button(
+                    "Approve for jobseeker",
+                    key=(
+                        f"approve_"
+                        f"{profile.user_id}_"
+                        f"{course_id}"
+                    ),
+                    type="primary"
+                ):
+
+                    approval_success = approve_course(
+                        profile.user_id,
+                        course_id,
+                        caseworker_organisation
+                    )
+
+                    if approval_success:
+
+                        st.rerun()
+
+                    else:
+
+                        st.error(
+                            "Approval blocked: the caseworker, "
+                            "applicant and course provider must "
+                            "belong to the same organisation."
+                        )
+
+    # --------------------------------------------------------
+    # CASEWORKER DECISION SUMMARY
+    # --------------------------------------------------------
+
+    st.divider()
+
+    approved_ids = (
+        st.session_state.approvals_by_user.get(
+            profile.user_id,
+            []
+        )
+    )
+
+    st.subheader(
+        "Caseworker decision summary"
+    )
+
+    if approved_ids:
+
+        approved_summary = jobseeker_output[
+            jobseeker_output[
+                "course_id"
+            ].isin(
+                approved_ids
+            )
+        ]
+
+        st.success(
+            f"{len(approved_summary)} course(s) approved "
+            "for the jobseeker view."
+        )
+
+        for _, approved_course in (
+            approved_summary
+            .sort_values("rank")
+            .iterrows()
+        ):
+
+            st.write(
+                f"✓ #{int(approved_course['rank'])} "
+                f"{approved_course['title']}"
+            )
+
+    else:
+
+        st.info(
+            "No courses have been approved yet. "
+            "The jobseeker will not see any recommendations."
+        )
+
+    st.stop()
+
+
+
 
 # ============================================================
 # JOBSEEKER VIEW
