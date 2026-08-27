@@ -1241,7 +1241,6 @@ if demo_role == "Caseworker":
     with col2:
         st.write(f"**Digital:** {profile.digital_profile}")
         st.write(f"**Green:** {profile.green_profile}")
-        st.write(f"**Language:** {profile.preferred_language}")
 
     with col3:
         st.write(f"**Delivery:** {profile.learning_styles}")
