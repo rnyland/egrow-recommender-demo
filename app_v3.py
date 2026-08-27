@@ -1770,10 +1770,6 @@ if demo_role == "Jobseeker":
 
         st.divider()
 
-        st.subheader(
-            "Why this learning opportunity may fit you"
-        )
-
         for reason in detail[
             "reasons_for_fit"
         ]:
@@ -1900,10 +1896,6 @@ if demo_role == "Jobseeker":
                     f"**Duration**  \n"
                     f"{row['duration_weeks']} weeks"
                 )
-
-            st.write(
-                "**Why this may fit you**"
-            )
 
             for reason in row[
                 "reasons_for_fit"
