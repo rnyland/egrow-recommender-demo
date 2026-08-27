@@ -583,10 +583,6 @@ def extract_jobseeker_profile(user):
             "city"
         ],
 
-        preferred_language=user[
-            "preferred_language"
-        ],
-
         education_level=user[
             "education_level"
         ],
