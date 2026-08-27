@@ -432,16 +432,12 @@ class JobSeekerProfile:
     age: Optional[int]
     country: Optional[str]
     city: Optional[str]
-    preferred_language: Optional[str]
 
     education_level: Optional[str]
     employment_status: Optional[str]
-    program_status: Optional[str]
 
     learning_styles: Optional[str]
     accessibility_need: Optional[str]
-
-    previous_course_count: int = 0
 
     missing_fields: list = field(
         default_factory=list
