@@ -904,13 +904,6 @@ def calculate_digital_fit(profile, course):
 # Calculates how closely the applicant's green capability
 # matches the green level of the course.
 
-# ------------------------------------------------------------
-# B) GREEN FIT
-# ------------------------------------------------------------
-
-# Calculates how closely the applicant's green profile
-# matches the green relevance of the course.
-
 def calculate_green_fit(
     profile,
     course
@@ -1071,13 +1064,13 @@ top_recommendations = (
 
 def create_match_label(score):
 
-    if score >= 85:
+    if score >= 90:
         return "Very strong match"
 
-    elif score >= 70:
+    elif score >= 75:
         return "Strong match"
 
-    elif score >= 55:
+    elif score >= 50:
         return "Good match"
 
     else:
@@ -1091,42 +1084,6 @@ def create_recommendation_explanation(
 
     reasons = []
     tradeoffs = []
-
-    # --------------------------------------------------------
-    # Digital fit
-    # --------------------------------------------------------
-
-    if course["digital_score"] >= 80:
-
-        reasons.append(
-            "The course level is well aligned "
-            "with your current digital profile."
-        )
-
-    elif course["digital_score"] < 80:
-
-        tradeoffs.append(
-            "The course may be below your current "
-            "digital capability."
-        )
-
-    # --------------------------------------------------------
-    # Green fit
-    # --------------------------------------------------------
-
-    if course["green_score"] >= 80:
-
-        reasons.append(
-            "The course has a strong alignment "
-            "with your current green profile."
-        )
-
-    elif course["green_score"] < 60:
-
-        tradeoffs.append(
-            "The course has a comparatively weaker "
-            "alignment with your current green profile."
-        )
 
     return reasons, tradeoffs
 
