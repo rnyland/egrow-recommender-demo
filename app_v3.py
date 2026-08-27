@@ -591,9 +591,6 @@ def extract_jobseeker_profile(user):
             "employment_status"
         ],
 
-        program_status=user[
-            "program_status"
-        ],
 
         learning_styles=user[
             "learning_styles"
