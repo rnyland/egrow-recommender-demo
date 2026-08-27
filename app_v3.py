@@ -673,14 +673,6 @@ candidate_courses = retrieve_candidate_courses(
 
 # Purpose: Removes courses that are not practically suitable for the applicant.
 
-# Defines the order of digital capability levels.
-
-DIGITAL_LEVEL_ORDER = {
-    "low": 1,
-    "medium": 2,
-    "high": 3
-}
-
 # Checks whether each course is feasible for the selected applicant.
 
 def check_feasibility(profile, course):
@@ -742,27 +734,6 @@ def check_feasibility(profile, course):
     ):
         reasons.append(
             "Course is remote, but user prefers in-person."
-        )
-
-    # --------------------------------------------------------
-    # Digital readiness
-    # --------------------------------------------------------
-
-    # Checks whether the jobseeker has the digital level required for the course.
-    
-    user_digital = DIGITAL_LEVEL_ORDER.get(
-        str(profile.digital_level).lower(),
-        0
-    )
-
-    required_digital = DIGITAL_LEVEL_ORDER.get(
-        str(course["digital_level_required"]).lower(),
-        0
-    )
-
-    if user_digital < required_digital:
-        reasons.append(
-            "Course requires a higher digital level."
         )
 
     # --------------------------------------------------------
@@ -866,14 +837,27 @@ else:
 
 # Purpose: Scores and ranks feasible courses based on digital and green fit.
 
-# Sets how much digital and green fit contribute to the final score.
+# Converts digital levels into numbers so they can be compared.
+# This also has to be done for green levels when these have been finalized.
+
+DIGITAL_LEVEL_ORDER = {
+    "low": 1,
+    "medium": 2,
+    "high": 3
+}
+
+# Digital fit and green fit contribute equally to the final score.
 
 RANKING_WEIGHTS = {
     "digital_fit": 0.50,
     "green_fit": 0.50
 }
 
-# Calculates how well the course's digital level matches the jobseeker.
+# ------------------------------------------------------------
+# A) DIGITAL FIT
+# ------------------------------------------------------------
+
+# Calculates how well the course's digital level matches the applicant.
 
 def calculate_digital_fit(profile, course):
 
@@ -882,60 +866,91 @@ def calculate_digital_fit(profile, course):
         0
     )
 
-    required_level = DIGITAL_LEVEL_ORDER.get(
+    course_level = DIGITAL_LEVEL_ORDER.get(
         str(
             course["digital_level_required"]
         ).lower(),
         0
     )
 
-    # Gives a higher score when the course level closely matches the user's digital level.
-    
-    if user_level == required_level:
-        return 100.0
+    # Calculates the distance between the applicant's level and the course level.
 
-    elif user_level == required_level + 1:
-        return 80.0
-
-    elif user_level >= required_level + 2:
-        return 60.0
-
+    # Fallback mechanism if an unexpected value occurs
+    if user_level is None or course_level is None:
     return 0.0
-
-# Calculates how well the course's green relevance matches the jobseeker's green profile.
-
-def calculate_green_fit(profile, course):
-
-    green_relevance = str(
-        course["green_relevance"]
-    ).lower()
-
-    # Assigns a green-fit score based on the user's green profile class.
     
-    if profile.green_class == 1:
-
-        score_map = {
-            "low": 30,
-            "medium": 70,
-            "high": 100
-        }
-
-    else:
-
-        score_map = {
-            "low": 60,
-            "medium": 80,
-            "high": 90
-        }
-
-    return float(
-        score_map.get(
-            green_relevance,
-            50
-        )
+    difference = abs(
+        user_level - course_level
     )
 
-# Calculates a final score for every feasible course.
+    # Exact match
+    if difference == 0:
+        return 100.0
+
+    # Applicant and course are one level apart
+    elif difference == 1:
+        return 75.0
+
+    # Applicant and course are two levels apart
+    elif difference == 2:
+        return 50.0
+
+    return 50.0
+
+# ------------------------------------------------------------
+# B) GREEN FIT
+# ------------------------------------------------------------
+
+# Calculates how closely the applicant's green capability
+# matches the green level of the course.
+
+def calculate_green_fit(
+    profile,
+    course
+):
+
+    # Converts course green relevance into the same 1–3 scale.
+    GREEN_RELEVANCE_ORDER = {
+        "low": 1,
+        "medium": 2,
+        "high": 3
+    }
+
+    user_level = GREEN_CLASS_TO_LEVEL.get(
+        profile.green_class
+    )
+
+    course_level = GREEN_RELEVANCE_ORDER.get(
+        str(course["green_relevance"]).lower()
+    )
+
+    # Missing or unknown information
+    if user_level is None or course_level is None:
+        return 0.0
+
+    # Calculates how far apart the applicant and course are.
+    difference = abs(
+        user_level - course_level
+    )
+
+    # Exact match
+    if difference == 0:
+        return 100.0
+
+    # One level apart
+    elif difference == 1:
+        return 75.0
+
+    # Two levels apart
+    elif difference == 2:
+        return 50.0
+
+# ------------------------------------------------------------
+# FINAL MATCH SCORE
+# ------------------------------------------------------------
+
+# Calculates the digital and green score for every feasible course
+# and combines them into one final match score.
 
 def rank_courses(
     profile,
@@ -944,8 +959,10 @@ def rank_courses(
 
     ranked_records = []
 
+    # Assess every feasible course.
     for _, course in feasible_courses.iterrows():
 
+        # Calculate digital fit
         digital_score = (
             calculate_digital_fit(
                 profile,
@@ -953,6 +970,7 @@ def rank_courses(
             )
         )
 
+        Calculate green fit
         green_score = (
             calculate_green_fit(
                 profile,
@@ -974,6 +992,7 @@ def rank_courses(
             ]
         )
 
+        # Add the scores to the course information
         record = course.to_dict()
 
         record["digital_score"] = (
@@ -992,6 +1011,7 @@ def rank_courses(
             record
         )
 
+    # Convert results to dataframe
     ranked = pd.DataFrame(
         ranked_records
     )
@@ -999,7 +1019,7 @@ def rank_courses(
     if ranked.empty:
         return ranked
 
-    # Sorts courses from highest to lowest match score.
+    # Rank/Sorts courses from highest to lowest match score.
     
     ranked = (
         ranked
@@ -1010,7 +1030,7 @@ def rank_courses(
         .reset_index(drop=True)
     )
 
-    # Adds a ranking number to each course.
+    # Recommendation rank: Adds a ranking number to each course.
     
     ranked["rank"] = range(
         1,
@@ -1019,7 +1039,9 @@ def rank_courses(
 
     return ranked
 
-# Runs the ranking process on all feasible courses.
+# ------------------------------------------------------------
+# RUN RANKING
+# ------------------------------------------------------------
 
 ranked_courses = rank_courses(
     profile=profile,
