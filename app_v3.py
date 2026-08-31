@@ -886,13 +886,13 @@ def calculate_digital_fit(profile, course):
 
     # Applicant and course are one level apart
     elif difference == 1:
-        return 75.0
+        return 60.0
 
     # Applicant and course are two levels apart
     elif difference == 2:
-        return 50.0
+        return 20.0
 
-    return 50.0
+    return 20.0
 
 # ------------------------------------------------------------
 # B) GREEN FIT
@@ -938,11 +938,14 @@ def calculate_green_fit(
 
     # One level apart
     elif difference == 1:
-        return 75.0
+        return 60.0
 
     # Two levels apart
     elif difference == 2:
-        return 50.0
+        return 20.0
+
+    # Fall back mechanism if an unexpected error occurs
+    return 20.0
 
 # ------------------------------------------------------------
 # FINAL MATCH SCORE
