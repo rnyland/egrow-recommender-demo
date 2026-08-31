@@ -1074,13 +1074,33 @@ def create_match_label(score):
         return "Possible match"
 
 
-def create_recommendation_explanation(
-    profile,
-    course
-):
-
+def create_recommendation_explanation(profile, course):
     reasons = []
     tradeoffs = []
+
+    # Digital fit
+    digital_score = course["digital_score"]
+    if digital_score == 100.0:
+        reasons.append("Digital skills match the course exactly.")
+    elif digital_score == 75.0:
+        reasons.append("Digital skills are close to what the course requires.")
+    else:
+        tradeoffs.append("Digital skills differ compared to what the course requires.")
+
+    # Green fit
+    green_score = course["green_score"]
+    if green_score == 100.0:
+        reasons.append("Green skills match the course exactly.")
+    elif green_score == 75.0:
+        reasons.append("Green skills are close to what the course requires.")
+    else:
+        tradeoffs.append("Green skills differ compared to what the course requires.")
+
+    # Delivery mode / Learning preference
+    user_delivery = str(profile.learning_styles).lower()
+    course_delivery = str(course["delivery_mode"]).lower()
+    if user_delivery == course_delivery:
+        reasons.append(f"Delivery mode ({course['delivery_mode']}) matches the applicant's preference.")
 
     return reasons, tradeoffs
 
@@ -1762,12 +1782,6 @@ if demo_role == "Jobseeker":
                 detail["language"]
             )
 
-        st.divider()
-
-        for reason in detail[
-            "reasons_for_fit"
-        ]:
-
             st.write(f"✓ {reason}")
 
         if len(
@@ -1785,26 +1799,6 @@ if demo_role == "Jobseeker":
             ]:
 
                 st.write(f"• {credential}")
-
-        st.subheader(
-            "Things to consider"
-        )
-
-        if detail["tradeoffs"]:
-
-            for tradeoff in detail[
-                "tradeoffs"
-            ]:
-
-                st.write(f"• {tradeoff}")
-
-        else:
-
-            st.write(
-                "No major trade-offs identified."
-            )
-
-        st.divider()
 
         if (
             detail["course_id"]
@@ -1891,11 +1885,6 @@ if demo_role == "Jobseeker":
                     f"{row['duration_weeks']} weeks"
                 )
 
-            for reason in row[
-                "reasons_for_fit"
-            ]:
-
-                st.write(f"✓ {reason}")
 
             button_col1, button_col2, _ = (
                 st.columns(
