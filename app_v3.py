@@ -1782,8 +1782,6 @@ if demo_role == "Jobseeker":
                 detail["language"]
             )
 
-            st.write(f"✓ {reason}")
-
         if len(
             detail[
                 "micro_credentials"
