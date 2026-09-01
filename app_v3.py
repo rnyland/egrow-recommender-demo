@@ -1054,9 +1054,9 @@ if demo_role == "Caseworker":
     st.write("**Transformative capabilities**")
     capability_col1, capability_col2 = st.columns(2)
     with capability_col1:
-        st.write(f"Digital: {profile.digital_profile}")
+        st.write(f"**Digital:** {profile.digital_profile}")
     with capability_col2:
-        st.write(f"Green: {profile.green_profile}")
+        st.write(f"**Green:** {profile.green_profile}")
     st.divider()
     
     # ----------------------------------------------------
