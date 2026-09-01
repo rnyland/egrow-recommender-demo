@@ -1052,7 +1052,7 @@ if demo_role == "Caseworker":
     # TRANSFORMATIVE CAPABILITIES (digital + green)
     # ----------------------------------------------------
     st.write("**Transformative capabilities**")
-    capability_col1, capability_col2 = st.columns(2)
+    capability_col1, capability_col2, capability_col3 = st.columns(3)
     with capability_col1:
         st.write(f"**Digital:** {profile.digital_profile}")
     with capability_col2:
@@ -1082,7 +1082,7 @@ if demo_role == "Caseworker":
     st.divider()
     
     # ----------------------------------------------------
-    # EMPOWERMENT (nine separate dimensions — never combined)
+    # EMPOWERMENT (nine separate dimensions)
     # ----------------------------------------------------
     st.write(
         "**Empowerment Capabilities**"
