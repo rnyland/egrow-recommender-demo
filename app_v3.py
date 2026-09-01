@@ -1011,33 +1011,52 @@ if demo_role == "Caseworker":
         '</div>',
         unsafe_allow_html=True
     )
+
     # --------------------------------------------------------
     # JOBSEEKER PROFILE
     # --------------------------------------------------------
     st.subheader("Jobseeker profile")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    # ----------------------------------------------------
+    # IDENTITY / DEMOGRAPHIC GRID — always visible, not tucked behind an
+    # expander, so the caseworker sees the full profile up front.
+    # Row 1: User / Age / Location
+    # Row 2: Organisation / Education / Employment
+    # Row 3: Accessibility need / Delivery / Profile confidence
+    # ----------------------------------------------------
+    row1_col1, row1_col2, row1_col3 = st.columns(3)
+    with row1_col1:
         st.write(f"**User:** {profile.user_id}")
-        st.write(f"**Organisation:** {profile.organisation}")
-        st.write(f"**Employment:** {profile.employment_status}")
-    with col2:
-        st.write(f"**Digital:** {profile.digital_profile}")
-        st.write(f"**Green:** {profile.green_profile}")
-    with col3:
-        st.write(f"**Delivery:** {profile.learning_styles}")
-        st.write(f"**Profile confidence:** {profile.profile_confidence}")
-    # ----------------------------------------------------
-    # ADDITIONAL PROFILE INFORMATION — always visible, not tucked behind
-    # an expander, so the caseworker sees the full profile up front.
-    # ----------------------------------------------------
-    extra_col1, extra_col2, extra_col3 = st.columns(3)
-    with extra_col1:
+    with row1_col2:
         st.write(f"**Age:** {profile.age}")
-    with extra_col2:
-        st.write(f"**Education:** {profile.education_level}")
-    with extra_col3:
+    with row1_col3:
         st.write(f"**Location:** {profile.city}, {profile.country}")
-    st.write(f"**Accessibility need:** {profile.accessibility_need}")
+ 
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    with row2_col1:
+        st.write(f"**Organisation:** {profile.organisation}")
+    with row2_col2:
+        st.write(f"**Education:** {profile.education_level}")
+    with row2_col3:
+        st.write(f"**Employment:** {profile.employment_status}")
+ 
+    row3_col1, row3_col2, row3_col3 = st.columns(3)
+    with row3_col1:
+        st.write(f"**Accessibility need:** {profile.accessibility_need}")
+    with row3_col2:
+        st.write(f"**Delivery:** {profile.learning_styles}")
+    with row3_col3:
+        st.write(f"**Profile confidence:** {profile.profile_confidence}")
+    st.divider()
+
+    # ----------------------------------------------------
+    # TRANSFORMATIVE CAPABILITIES (digital + green)
+    # ----------------------------------------------------
+    st.write("**Transformative capabilities**")
+    capability_col1, capability_col2 = st.columns(2)
+    with capability_col1:
+        st.write(f"Digital: {profile.digital_profile}")
+    with capability_col2:
+        st.write(f"Green: {profile.green_profile}")
     st.divider()
     
     # ----------------------------------------------------
