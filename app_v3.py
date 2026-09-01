@@ -1039,6 +1039,7 @@ if demo_role == "Caseworker":
         st.write(f"**Location:** {profile.city}, {profile.country}")
     st.write(f"**Accessibility need:** {profile.accessibility_need}")
     st.divider()
+    
     # ----------------------------------------------------
     # LEARNING PREFERENCE (three sub-components)
     # ----------------------------------------------------
@@ -1046,16 +1047,21 @@ if demo_role == "Caseworker":
     # in the feasibility filter. These two are display-only context for
     # the caseworker — they aren't matched against any course attribute.
     st.write("**Learning preference**")
-    st.write(f"- Learning style: {profile.learning_styles}")
-    st.write(
-        f"- Lifelong learning mindset: "
-        f"{profile.lifelong_learning_mindset or 'Not available'}"
-    )
-    st.write(
-        f"- Goal orientation: "
-        f"{profile.goal_orientation or 'Not available'}"
-    )
+    pref_col1, pref_col2, pref_col3 = st.columns(3)
+    with pref_col1:
+        st.write(f"Learning style: {profile.learning_styles}")
+    with pref_col2:
+        st.write(
+            f"Lifelong learning mindset: "
+            f"{profile.lifelong_learning_mindset or 'Not available'}"
+        )
+    with pref_col3:
+        st.write(
+            f"Goal orientation: "
+            f"{profile.goal_orientation or 'Not available'}"
+        )
     st.divider()
+    
     # ----------------------------------------------------
     # EMPOWERMENT (nine separate dimensions — never combined)
     # ----------------------------------------------------
