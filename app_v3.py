@@ -1049,15 +1049,15 @@ if demo_role == "Caseworker":
     st.write("**Learning preference**")
     pref_col1, pref_col2, pref_col3 = st.columns(3)
     with pref_col1:
-        st.write(f"Learning style: {profile.learning_styles}")
+        st.write(f"**Learning style:** {profile.learning_styles}")
     with pref_col2:
         st.write(
-            f"Lifelong learning mindset: "
+            f"**Lifelong learning mindset:** "
             f"{profile.lifelong_learning_mindset or 'Not available'}"
         )
     with pref_col3:
         st.write(
-            f"Goal orientation: "
+            f"**Goal orientation:** "
             f"{profile.goal_orientation or 'Not available'}"
         )
     st.divider()
