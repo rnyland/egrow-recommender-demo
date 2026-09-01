@@ -1026,51 +1026,58 @@ if demo_role == "Caseworker":
     with col3:
         st.write(f"**Delivery:** {profile.learning_styles}")
         st.write(f"**Profile confidence:** {profile.profile_confidence}")
-    with st.expander("View additional profile information"):
+    # ----------------------------------------------------
+    # ADDITIONAL PROFILE INFORMATION — always visible, not tucked behind
+    # an expander, so the caseworker sees the full profile up front.
+    # ----------------------------------------------------
+    extra_col1, extra_col2, extra_col3 = st.columns(3)
+    with extra_col1:
         st.write(f"**Age:** {profile.age}")
+    with extra_col2:
         st.write(f"**Education:** {profile.education_level}")
+    with extra_col3:
         st.write(f"**Location:** {profile.city}, {profile.country}")
-        st.write(f"**Accessibility need:** {profile.accessibility_need}")
-        st.divider()
-        # ----------------------------------------------------
-        # LEARNING PREFERENCE (three sub-components)
-        # ----------------------------------------------------
-        # learning_styles is shown above ("Delivery") since it's also used
-        # in the feasibility filter. These two are display-only context for
-        # the caseworker — they aren't matched against any course attribute.
-        st.write("**Learning preference**")
-        st.write(f"- Learning style: {profile.learning_styles}")
-        st.write(
-            f"- Lifelong learning mindset: "
-            f"{profile.lifelong_learning_mindset or 'Not available'}"
+    st.write(f"**Accessibility need:** {profile.accessibility_need}")
+    st.divider()
+    # ----------------------------------------------------
+    # LEARNING PREFERENCE (three sub-components)
+    # ----------------------------------------------------
+    # learning_styles is shown above ("Delivery") since it's also used
+    # in the feasibility filter. These two are display-only context for
+    # the caseworker — they aren't matched against any course attribute.
+    st.write("**Learning preference**")
+    st.write(f"- Learning style: {profile.learning_styles}")
+    st.write(
+        f"- Lifelong learning mindset: "
+        f"{profile.lifelong_learning_mindset or 'Not available'}"
+    )
+    st.write(
+        f"- Goal orientation: "
+        f"{profile.goal_orientation or 'Not available'}"
+    )
+    st.divider()
+    # ----------------------------------------------------
+    # EMPOWERMENT (nine separate dimensions — never combined)
+    # ----------------------------------------------------
+    st.write(
+        "**Empowerment** (shown per dimension — not combined into "
+        "one score, and not used in course matching)"
+    )
+    empowerment_col1, empowerment_col2, empowerment_col3 = st.columns(3)
+    empowerment_columns = [
+        empowerment_col1,
+        empowerment_col2,
+        empowerment_col3,
+    ]
+    for index, dimension in enumerate(EMPOWERMENT_DIMENSIONS):
+        value = profile.empowerment.get(dimension)
+        display_value = value if value is not None else "N/A"
+        target_column = empowerment_columns[index % 3]
+        label = EMPOWERMENT_DIMENSION_LABELS.get(
+            dimension, dimension.replace("_", " ").title()
         )
-        st.write(
-            f"- Goal orientation: "
-            f"{profile.goal_orientation or 'Not available'}"
-        )
-        st.divider()
-        # ----------------------------------------------------
-        # EMPOWERMENT (nine separate dimensions — never combined)
-        # ----------------------------------------------------
-        st.write(
-            "**Empowerment** (shown per dimension — not combined into "
-            "one score, and not used in course matching)"
-        )
-        empowerment_col1, empowerment_col2, empowerment_col3 = st.columns(3)
-        empowerment_columns = [
-            empowerment_col1,
-            empowerment_col2,
-            empowerment_col3,
-        ]
-        for index, dimension in enumerate(EMPOWERMENT_DIMENSIONS):
-            value = profile.empowerment.get(dimension)
-            display_value = value if value is not None else "N/A"
-            target_column = empowerment_columns[index % 3]
-            label = EMPOWERMENT_DIMENSION_LABELS.get(
-                dimension, dimension.replace("_", " ").title()
-            )
-            with target_column:
-                st.write(f"**{label}:** {display_value}")
+        with target_column:
+            st.write(f"**{label}:** {display_value}")
     st.divider()
     # --------------------------------------------------------
     # CHECK WHETHER RECOMMENDATIONS CAN BE MADE
