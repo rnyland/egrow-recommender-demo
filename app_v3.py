@@ -1058,29 +1058,7 @@ if demo_role == "Caseworker":
     with capability_col2:
         st.write(f"**Green:** {profile.green_profile}")
     st.divider()
-    
-    # ----------------------------------------------------
-    # LEARNING PREFERENCE (three sub-components)
-    # ----------------------------------------------------
-    # learning_styles is shown above ("Delivery") since it's also used
-    # in the feasibility filter. These two are display-only context for
-    # the caseworker — they aren't matched against any course attribute.
-    st.write("**Learning preference**")
-    pref_col1, pref_col2, pref_col3 = st.columns(3)
-    with pref_col1:
-        st.write(f"**Learning style:** {profile.learning_styles}")
-    with pref_col2:
-        st.write(
-            f"**Lifelong learning mindset:** "
-            f"{profile.lifelong_learning_mindset or 'Not available'}"
-        )
-    with pref_col3:
-        st.write(
-            f"**Goal orientation:** "
-            f"{profile.goal_orientation or 'Not available'}"
-        )
-    st.divider()
-    
+        
     # ----------------------------------------------------
     # EMPOWERMENT (nine separate dimensions)
     # ----------------------------------------------------
@@ -1103,6 +1081,29 @@ if demo_role == "Caseworker":
         with target_column:
             st.write(f"**{label}:** {display_value}")
     st.divider()
+
+    # ----------------------------------------------------
+    # LEARNING PREFERENCE (three sub-components)
+    # ----------------------------------------------------
+    # learning_styles is shown above ("Delivery") since it's also used
+    # in the feasibility filter. These two are display-only context for
+    # the caseworker — they aren't matched against any course attribute.
+    st.write("**Learning preference**")
+    pref_col1, pref_col2, pref_col3 = st.columns(3)
+    with pref_col1:
+        st.write(f"**Learning style:** {profile.learning_styles}")
+    with pref_col2:
+        st.write(
+            f"**Lifelong learning mindset:** "
+            f"{profile.lifelong_learning_mindset or 'Not available'}"
+        )
+    with pref_col3:
+        st.write(
+            f"**Goal orientation:** "
+            f"{profile.goal_orientation or 'Not available'}"
+        )
+    st.divider()
+    
     # --------------------------------------------------------
     # CHECK WHETHER RECOMMENDATIONS CAN BE MADE
     # --------------------------------------------------------
