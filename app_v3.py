@@ -1060,8 +1060,7 @@ if demo_role == "Caseworker":
     # EMPOWERMENT (nine separate dimensions — never combined)
     # ----------------------------------------------------
     st.write(
-        "**Empowerment** (shown per dimension — not combined into "
-        "one score, and not used in course matching)"
+        "**Empowerment Capabilities**"
     )
     empowerment_col1, empowerment_col2, empowerment_col3 = st.columns(3)
     empowerment_columns = [
